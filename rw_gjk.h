@@ -8,6 +8,9 @@ Written by Robin Wragg.
 See end of file for license information.
 */
 
+#ifndef RW_GJK_H
+#define RW_GJK_H
+
 #include <vector>
 
 namespace rw_gjk {
@@ -45,8 +48,17 @@ namespace rw_gjk {
 		vector<v2> corners; // TODO: Make private?
 	};
 	
+	struct OverlapInfo {
+		bool overlapping;
+		v2 amount; // TODO: rename?
+	};
+	
 	Shape *allocShape(vector<v2> corners);
+	
+	OverlapInfo getOverlapInfo(Shape *shapeA, Shape *shapeB);
 }
+
+#endif
 
 /*
 MIT License

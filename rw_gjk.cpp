@@ -313,14 +313,6 @@ namespace rw_gjk {
 		}
 	}
 	
-	struct OverlapInfo {
-		bool overlapping;
-		v2 amount; // TODO: rename?
-		bool failure;
-	};
-	
-	vector<vector<v2>> sss; // TODO: this is temporary, for debugging issues in getOverlapInfo().
-	vector<v2> mink;
 	OverlapInfo getOverlapInfo(Shape *shapeA, Shape *shapeB) {
 		
 		auto getAmountForOriginOnEdge = [shapeA, shapeB]() {
@@ -337,8 +329,6 @@ namespace rw_gjk {
 		vector<v2> simplex;
 		
 		info.overlapping = shapesAreOverlapping(shapeA, shapeB, &simplex);
-		info.failure = false;
-		sss = {simplex};
 		
 		if (info.overlapping) {
 			if (simplex.size() < 2) {
@@ -400,7 +390,6 @@ namespace rw_gjk {
 					// add the new corner to the simplex, turning the existing line into two.
 					simplex.insert(simplex.begin()+s1, newSimplexCrnr);
 					assert(!containsDuplicates(simplex));
-					sss.push_back(simplex);
 				}
 			}
 		}
