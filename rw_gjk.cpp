@@ -1,7 +1,8 @@
 /*
 rw_gjk
 
-A 2D collision handling library using the Gilbert–Johnson–Keerthi distance algorithm (GJK).
+A 2D collision detection and resolution library.
+Based on the Gilbert–Johnson–Keerthi distance algorithm (GJK).
 Written by Robin Wragg.
 
 See end of file for license information.
