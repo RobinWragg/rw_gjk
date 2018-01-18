@@ -17,10 +17,7 @@ See end of file for license information.
 	// will return nullptr if the corners form a concave shape
 	// will return nullptr if any three of the corners form a straight line
 
-#include <cmath>
-#include <cassert>
-#include <vector>
-#include <string>
+#include "rw_gjk.h"
 
 #ifndef M_TAU
 #define M_TAU (2*M_PI)
@@ -117,13 +114,6 @@ namespace rw_gjk {
 	v2 v2::operator/(const f64 &rh) const {
 		return v2(x / rh, y / rh);
 	}
-	
-	struct Shape {
-		v2 pos;
-		f32 angle;
-		
-		vector<v2> corners;
-	};
 	
 	v2 origin = v2(0, 0);
 	string errorDescription = "";

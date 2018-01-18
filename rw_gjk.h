@@ -40,6 +40,15 @@ namespace rw_gjk {
 		v2 operator*(const f64 &) const;
 		v2 operator/(const f64 &) const;
 	};
+	
+	struct Shape {
+		v2 pos;
+		f32 angle;
+		
+		vector<v2> corners; // TODO: Make private?
+	};
+	
+	Shape *allocShape(vector<v2> corners);
 }
 
 /*
