@@ -18,10 +18,9 @@ See end of file for license information.
 	// will return nullptr if any three of the corners form a straight line
 
 #include "rw_gjk.h"
-
-#ifndef M_TAU
-#define M_TAU (2*M_PI)
-#endif
+#include <cmath>
+#include <cassert>
+#include <string>
 
 namespace rw_gjk {
 	using namespace std;

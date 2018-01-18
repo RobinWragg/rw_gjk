@@ -8,10 +8,7 @@ Written by Robin Wragg.
 See end of file for license information.
 */
 
-#include <cmath>
-#include <cassert>
 #include <vector>
-#include <string>
 
 namespace rw_gjk {
 	using namespace std;
