@@ -30,22 +30,44 @@ int main() {
 	printf("allocShape():\n");
 	{
 		printTestName("Valid shape with clockwise winding");
-		vector<v2> corners = {v2(0, 0), v2(0, 1), v2(1, 1)};
+		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1) };
 		Shape *shape = allocShape(corners);
 		printTestResult(shape != nullptr);
+		delete shape;
 	}
 	
 	{
 		printTestName("Valid shape with anti-clockwise winding");
-		vector<v2> corners = {v2(0, 0), v2(1, 0), v2(1, 1)};
+		vector<v2> corners = { v2(0, 0), v2(1, 0), v2(1, 1) };
 		Shape *shape = allocShape(corners);
 		printTestResult(shape != nullptr);
+		delete shape;
 	}
 	
 	{
 		printTestName("Invalid concave shape");
-		vector<v2> corners = {
-			v2(0, 0), v2(0, 1), v2(1, 1), v2(0.1, 0.9)};
+		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1), v2(0.1, 0.9) };
+		Shape *shape = allocShape(corners);
+		printTestResult(shape == nullptr);
+	}
+	
+	{
+		printTestName("Invalid shape, only two corners");
+		vector<v2> corners = { v2(0, 0), v2(0, 1) };
+		Shape *shape = allocShape(corners);
+		printTestResult(shape == nullptr);
+	}
+	
+	{
+		printTestName("Invalid shape, only one corner");
+		vector<v2> corners = { v2(0, 1) };
+		Shape *shape = allocShape(corners);
+		printTestResult(shape == nullptr);
+	}
+	
+	{
+		printTestName("Invalid shape, no corners");
+		vector<v2> corners = {};
 		Shape *shape = allocShape(corners);
 		printTestResult(shape == nullptr);
 	}

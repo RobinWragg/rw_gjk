@@ -24,28 +24,24 @@ See end of file for license information.
 
 namespace rw_gjk {
 	using namespace std;
+	const RW_FLOAT TINY_NUMBER = 0.0000001; // TODO: calculate how tiny this should be in a smarter way. this is basically half the thickness of a line.
 	
-	typedef float f32;
-	typedef double f64;
-	
-	const f64 TINY_NUMBER = 0.0000001; // TODO: calculate how tiny this should be in a smarter way. this is basically half the thickness of a line.
-	
-	f64 dot(const v2 &a, const v2 &b) {
+	RW_FLOAT dot(const v2 &a, const v2 &b) {
 		return a.x*b.x + a.y*b.y;
 	}
 	
 	v2::v2() {}
 	
-	v2::v2(f64 x_, f64 y_) {
+	v2::v2(RW_FLOAT x_, RW_FLOAT y_) {
 		x = x_;
 		y = y_;
 	}
 	
-	f64 v2::length() const {
+	RW_FLOAT v2::length() const {
 		return hypot(x, y);
 	}
 	
-	f64 v2::distance(const v2 &rh) const {
+	RW_FLOAT v2::distance(const v2 &rh) const {
 		return hypot(x - rh.x, y - rh.y);
 	}
 	
@@ -58,7 +54,7 @@ namespace rw_gjk {
 			return v2(0, 0);
 		}
 		
-		f64 l = length();
+		RW_FLOAT l = length();
 		assert(l > 0);
 		return *this / l;
 	}
@@ -69,21 +65,21 @@ namespace rw_gjk {
 	
 	v2 v2::normalInDirectionOrZero(v2 direction) const {
 		v2 normal0 = rightNormalOrZero(); // TODO: I don't think this needs to be normalised until we return.
-		f64 dotResult = dot(normal0, direction);
+		RW_FLOAT dotResult = dot(normal0, direction);
 		
 		if (dotResult > 0) {
-			assert(fabs(dot(normal0, *this)) < 0.00000001);
+			assert(fabs(dot(normal0, *this)) < TINY_NUMBER);
 			return normal0;
 		} else if (dotResult < 0) {
 			v2 normal1 = normal0 * -1;
-			assert(fabs(dot(normal1, *this)) < 0.00000001);
+			assert(fabs(dot(normal1, *this)) < TINY_NUMBER);
 			return normal1;
 		} else {
 			return v2(0, 0);
 		}
 	}
 	
-	v2 v2::rotated(double radians) const {
+	v2 v2::rotated(RW_FLOAT radians) const {
 		v2 oldv = *this;
 		radians *= -1; // flip the sign so that a positive number rotates the vector clockwise
 		return v2(oldv.x*cos(radians) - oldv.y*sin(radians),
@@ -106,11 +102,11 @@ namespace rw_gjk {
 		return v2(-x, -y);
 	}
 	
-	v2 v2::operator*(const f64 &rh) const {
+	v2 v2::operator*(const RW_FLOAT &rh) const {
 		return v2(x * rh, y * rh);
 	}
 	
-	v2 v2::operator/(const f64 &rh) const {
+	v2 v2::operator/(const RW_FLOAT &rh) const {
 		return v2(x / rh, y / rh);
 	}
 	
@@ -151,13 +147,13 @@ namespace rw_gjk {
 			v2 searchDir = v2(0, 1);
 			while (true) {
 				// find the next corner
-				f64 highestCornerDot = -INFINITY;
+				RW_FLOAT highestCornerDot = -INFINITY;
 				v2 bestCorner;
 				for (int c = 0; c < corners.size(); c++) {
 					if (corners[c] == shape->corners.back()) continue;
 					
 					v2 cornerDifference = corners[c] - shape->corners.back();
-					f64 cornerDot = dot(searchDir, cornerDifference.normalisedOrZero());
+					RW_FLOAT cornerDot = dot(searchDir, cornerDifference.normalisedOrZero());
 					
 					if (cornerDot >= 0 && cornerDot > highestCornerDot) {
 						highestCornerDot = cornerDot;
@@ -198,11 +194,11 @@ namespace rw_gjk {
 	v2 getMinkowskiDiffedEdge(Shape *shape, Shape *otherShape, v2 direction) {
 		auto getEdgeOfRotatedShape = [](Shape *shape, v2 direction) {
 			v2 bestCrnr;
-			f64 bestDot = -INFINITY;
+			RW_FLOAT bestDot = -INFINITY;
 			
 			for (const auto &corner: shape->corners) {
 				v2 rotatedCrnr = corner.rotated(shape->angle);
-				f64 newDot = dot(rotatedCrnr, direction);
+				RW_FLOAT newDot = dot(rotatedCrnr, direction);
 				
 				if (newDot > bestDot) {
 					bestCrnr = rotatedCrnr;
@@ -299,7 +295,7 @@ namespace rw_gjk {
 			assert(simplex.size() < 3);
 			simplex.push_back(getMinkowskiDiffedEdge(shapeA, shapeB, searchDirection));
 			
-			f64 dotResult = dot(simplex.back(), searchDirection);
+			RW_FLOAT dotResult = dot(simplex.back(), searchDirection);
 			if (dotResult <= TINY_NUMBER) {
 				return false;
 			}
@@ -340,7 +336,7 @@ namespace rw_gjk {
 				// find simplex line closest to origin
 				int closestEdgeIndex = 0;
 				{
-					f64 closestDistance = INFINITY;
+					RW_FLOAT closestDistance = INFINITY;
 					
 					for (int s0 = 0; s0 < simplex.size(); s0++) {
 						int s1 = (s0 + 1) % simplex.size();
@@ -355,7 +351,7 @@ namespace rw_gjk {
 							return info;
 						}
 						
-						f64 distance = dot(outerNormal, simplex[s0]);
+						RW_FLOAT distance = dot(outerNormal, simplex[s0]);
 						if (distance < closestDistance) {
 							closestDistance = distance;
 							closestEdgeIndex = s0;
@@ -379,7 +375,7 @@ namespace rw_gjk {
 					// find the point on the line that is closest to the origin
 					v2 outerNormal = (simplex[s1] - simplex[s0]).normalInDirectionOrZero(simplex[s0] - simplex[s2]);
 					assert(!outerNormal.isZero());
-					f64 lengthOfPoint = dot(outerNormal, simplex[s0]);
+					RW_FLOAT lengthOfPoint = dot(outerNormal, simplex[s0]);
 					
 					// the difference between the origin and that point is the overlap amount.
 					info.amount = outerNormal.normalisedOrZero() * (lengthOfPoint + TINY_NUMBER);
