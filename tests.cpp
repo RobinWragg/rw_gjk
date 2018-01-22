@@ -1,15 +1,18 @@
 /*
 Compile and run these tests in bash with:
-g++ -std=c++11 tests.cpp rw_gjk.cpp -o tests && ./tests
+g++ -std=c++11 tests.cpp -o tests && ./tests
 
 I personally like to use:
-clear && echo Compiling... && g++ -std=c++11 tests.cpp rw_gjk.cpp -o tests && ./tests && rm tests
+clear && echo Compiling... && g++ -std=c++11 tests.cpp -o tests && ./tests && rm tests
 to clear the terminal beforehand and delete the executable after I'm done with it.
 */
 
 #include <cstdio>
 #include <string>
+
 #include "rw_gjk.h"
+#define RW_GJK_IMPLEMENTATION
+#include "rw_gjk.h" // Included twice to test the include guards.
 
 using namespace rw_gjk;
 
