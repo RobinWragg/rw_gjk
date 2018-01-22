@@ -16,28 +16,26 @@ See end of file for license information.
 namespace rw_gjk {
 	using namespace std;
 	
-	typedef double RW_FLOAT; // NOTE: ablility to use single-precision floats has not been proven.
-	
 	struct v2 {
-		RW_FLOAT x, y;
+		double x, y;
 		
 		v2();
-		v2(RW_FLOAT x_, RW_FLOAT y_);
+		v2(double x_, double y_);
 		
-		RW_FLOAT length() const;
-		RW_FLOAT distance(const v2 &) const;
+		double length() const;
+		double distance(const v2 &) const;
 		bool isZero() const;
 		v2 normalisedOrZero() const;
 		v2 rightNormalOrZero() const;
 		v2 normalInDirectionOrZero(v2 direction) const;
-		v2 rotated(RW_FLOAT radians) const;
+		v2 rotated(double radians) const;
 		
 		bool operator==(const v2 &) const;
 		v2 operator+(const v2 &) const;
 		v2 operator-(const v2 &) const;
 		v2 operator-() const;
-		v2 operator*(const RW_FLOAT &) const;
-		v2 operator/(const RW_FLOAT &) const;
+		v2 operator*(const double &) const;
+		v2 operator/(const double &) const;
 	};
 	
 	struct Shape {

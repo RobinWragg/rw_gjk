@@ -24,24 +24,24 @@ See end of file for license information.
 
 namespace rw_gjk {
 	using namespace std;
-	const RW_FLOAT TINY_NUMBER = 0.0000001; // TODO: calculate how tiny this should be in a smarter way. this is basically half the thickness of a line.
+	const double TINY_NUMBER = 0.0000001; // TODO: calculate how tiny this should be in a smarter way. this is basically half the thickness of a line.
 	
-	RW_FLOAT dot(const v2 &a, const v2 &b) {
+	double dot(const v2 &a, const v2 &b) {
 		return a.x*b.x + a.y*b.y;
 	}
 	
 	v2::v2() {}
 	
-	v2::v2(RW_FLOAT x_, RW_FLOAT y_) {
+	v2::v2(double x_, double y_) {
 		x = x_;
 		y = y_;
 	}
 	
-	RW_FLOAT v2::length() const {
+	double v2::length() const {
 		return hypot(x, y);
 	}
 	
-	RW_FLOAT v2::distance(const v2 &rh) const {
+	double v2::distance(const v2 &rh) const {
 		return hypot(x - rh.x, y - rh.y);
 	}
 	
@@ -54,7 +54,7 @@ namespace rw_gjk {
 			return v2(0, 0);
 		}
 		
-		RW_FLOAT l = length();
+		double l = length();
 		assert(l > 0);
 		return *this / l;
 	}
@@ -65,7 +65,7 @@ namespace rw_gjk {
 	
 	v2 v2::normalInDirectionOrZero(v2 direction) const {
 		v2 normal0 = rightNormalOrZero(); // TODO: I don't think this needs to be normalised until we return.
-		RW_FLOAT dotResult = dot(normal0, direction);
+		double dotResult = dot(normal0, direction);
 		
 		if (dotResult > 0) {
 			assert(fabs(dot(normal0, *this)) < TINY_NUMBER);
@@ -79,7 +79,7 @@ namespace rw_gjk {
 		}
 	}
 	
-	v2 v2::rotated(RW_FLOAT radians) const {
+	v2 v2::rotated(double radians) const {
 		v2 oldv = *this;
 		radians *= -1; // flip the sign so that a positive number rotates the vector clockwise
 		return v2(oldv.x*cos(radians) - oldv.y*sin(radians),
@@ -102,11 +102,11 @@ namespace rw_gjk {
 		return v2(-x, -y);
 	}
 	
-	v2 v2::operator*(const RW_FLOAT &rh) const {
+	v2 v2::operator*(const double &rh) const {
 		return v2(x * rh, y * rh);
 	}
 	
-	v2 v2::operator/(const RW_FLOAT &rh) const {
+	v2 v2::operator/(const double &rh) const {
 		return v2(x / rh, y / rh);
 	}
 	
@@ -147,13 +147,13 @@ namespace rw_gjk {
 			v2 searchDir = v2(0, 1);
 			while (true) {
 				// find the next corner
-				RW_FLOAT highestCornerDot = -INFINITY;
+				double highestCornerDot = -INFINITY;
 				v2 bestCorner;
 				for (int c = 0; c < corners.size(); c++) {
 					if (corners[c] == shape->corners.back()) continue;
 					
 					v2 cornerDifference = corners[c] - shape->corners.back();
-					RW_FLOAT cornerDot = dot(searchDir, cornerDifference.normalisedOrZero());
+					double cornerDot = dot(searchDir, cornerDifference.normalisedOrZero());
 					
 					if (cornerDot >= 0 && cornerDot > highestCornerDot) {
 						highestCornerDot = cornerDot;
@@ -194,11 +194,11 @@ namespace rw_gjk {
 	v2 getMinkowskiDiffedEdge(Shape *shape, Shape *otherShape, v2 direction) {
 		auto getEdgeOfRotatedShape = [](Shape *shape, v2 direction) {
 			v2 bestCrnr;
-			RW_FLOAT bestDot = -INFINITY;
+			double bestDot = -INFINITY;
 			
 			for (const auto &corner: shape->corners) {
 				v2 rotatedCrnr = corner.rotated(shape->angle);
-				RW_FLOAT newDot = dot(rotatedCrnr, direction);
+				double newDot = dot(rotatedCrnr, direction);
 				
 				if (newDot > bestDot) {
 					bestCrnr = rotatedCrnr;
@@ -295,7 +295,7 @@ namespace rw_gjk {
 			assert(simplex.size() < 3);
 			simplex.push_back(getMinkowskiDiffedEdge(shapeA, shapeB, searchDirection));
 			
-			RW_FLOAT dotResult = dot(simplex.back(), searchDirection);
+			double dotResult = dot(simplex.back(), searchDirection);
 			if (dotResult <= TINY_NUMBER) {
 				return false;
 			}
@@ -336,7 +336,7 @@ namespace rw_gjk {
 				// find simplex line closest to origin
 				int closestEdgeIndex = 0;
 				{
-					RW_FLOAT closestDistance = INFINITY;
+					double closestDistance = INFINITY;
 					
 					for (int s0 = 0; s0 < simplex.size(); s0++) {
 						int s1 = (s0 + 1) % simplex.size();
@@ -351,7 +351,7 @@ namespace rw_gjk {
 							return info;
 						}
 						
-						RW_FLOAT distance = dot(outerNormal, simplex[s0]);
+						double distance = dot(outerNormal, simplex[s0]);
 						if (distance < closestDistance) {
 							closestDistance = distance;
 							closestEdgeIndex = s0;
@@ -375,7 +375,7 @@ namespace rw_gjk {
 					// find the point on the line that is closest to the origin
 					v2 outerNormal = (simplex[s1] - simplex[s0]).normalInDirectionOrZero(simplex[s0] - simplex[s2]);
 					assert(!outerNormal.isZero());
-					RW_FLOAT lengthOfPoint = dot(outerNormal, simplex[s0]);
+					double lengthOfPoint = dot(outerNormal, simplex[s0]);
 					
 					// the difference between the origin and that point is the overlap amount.
 					info.amount = outerNormal.normalisedOrZero() * (lengthOfPoint + TINY_NUMBER);

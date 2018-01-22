@@ -1,0 +1,1 @@
+clear && echo Compiling... && g++ -std=c++11 tests.cpp rw_gjk.cpp -o tests && ./tests && rm tests
