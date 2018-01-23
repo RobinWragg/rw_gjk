@@ -41,6 +41,7 @@ namespace rw_gjk {
 	struct Shape {
 		v2 pos;
 		float angle;
+		double radius;
 		
 		vector<v2> corners; // TODO: Make private?
 	};
@@ -229,6 +230,11 @@ namespace rw_gjk {
 			}
 		}
 		
+		// set radius
+		for (auto &corner: shape.corners) {
+			if (corner.length() > shape.radius) shape.radius = corner.length();
+		}
+		
 		*shapeOut = shape;
 		shapeOut->pos = origin;
 		shapeOut->angle = 0;
@@ -330,6 +336,11 @@ namespace rw_gjk {
 		Shape *shapeA, Shape *shapeB,
 		vector<v2> *simplexOut = nullptr // This is only used internally.
 		) {
+		
+		{ // TODO: unfinished code for correctly setting TINY_NUMBER.
+			double largestRadius = max(shapeA->radius, shapeB->radius);
+			
+		}
 		
 		v2 searchDirection = v2(0, 1); // this can be anything except zero
 		vector<v2> simplex = {getMinkowskiDiffedEdge(shapeA, shapeB, searchDirection)};
