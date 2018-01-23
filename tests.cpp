@@ -30,49 +30,49 @@ void printTestResult(bool success) {
 int main() {
 	printf("\n * Running tests for rw_gjk *\n\n");
 	
-	printf("allocShape():\n");
+	Shape shape;
+	
+	printf("tryMakeShape():\n");
 	{
 		printTestName("Valid shape with clockwise winding");
 		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1) };
-		Shape *shape = allocShape(corners);
-		printTestResult(shape != nullptr);
-		delete shape;
+		printTestResult(tryMakeShape(corners, &shape));
 	}
 	
 	{
 		printTestName("Valid shape with anti-clockwise winding");
 		vector<v2> corners = { v2(0, 0), v2(1, 0), v2(1, 1) };
-		Shape *shape = allocShape(corners);
-		printTestResult(shape != nullptr);
-		delete shape;
+		printTestResult(tryMakeShape(corners, &shape));
+	}
+	
+	{
+		printTestName("Null pointer argument");
+		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1), v2(0.1, 0.9) };
+		printTestResult(!tryMakeShape(corners, nullptr));
 	}
 	
 	{
 		printTestName("Invalid concave shape");
 		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1), v2(0.1, 0.9) };
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	{
 		printTestName("Invalid shape, only two corners");
 		vector<v2> corners = { v2(0, 0), v2(0, 1) };
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	{
 		printTestName("Invalid shape, only one corner");
 		vector<v2> corners = { v2(0, 1) };
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	{
 		printTestName("Invalid shape, no corners");
 		vector<v2> corners = {};
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	{
@@ -80,8 +80,7 @@ int main() {
 		vector<v2> corners = {
 			v2(0, 0), v2(1, 0), v2(2, 0), v2(1, 1)
 		};
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	{
@@ -89,8 +88,7 @@ int main() {
 		vector<v2> corners = {
 			v2(0, 0), v2(0, 0), v2(1, 0), v2(0, 1)
 		};
-		Shape *shape = allocShape(corners);
-		printTestResult(shape == nullptr);
+		printTestResult(!tryMakeShape(corners, &shape));
 	}
 	
 	printf("\n");

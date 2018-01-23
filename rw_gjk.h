@@ -50,7 +50,7 @@ namespace rw_gjk {
 		v2 amount; // TODO: rename?
 	};
 	
-	Shape *allocShape(vector<v2> corners);
+	bool tryMakeShape(vector<v2> corners, Shape *shapeOut);
 	
 	OverlapInfo getOverlapInfo(Shape *shapeA, Shape *shapeB);
 }
@@ -167,17 +167,17 @@ namespace rw_gjk {
 		return false;
 	}
 	
-	Shape *allocShape(vector<v2> corners) {
+	bool tryMakeShape(vector<v2> corners, Shape *shapeOut) {
 		if (corners.size() < 3) {
 			errorDescription = "Less than 3 corners were given to allocShape().";
-			return nullptr;
+			return false;
 		}
 		
 		if (containsDuplicates(corners)) {
-			return nullptr;
+			return false;
 		}
 		
-		Shape *shape = new Shape;
+		Shape shape;
 		
 		// check if the corners form a convex shape
 		{
@@ -186,7 +186,7 @@ namespace rw_gjk {
 			for (auto &corner: corners) {
 				if (corner.x < leftmostCorner.x) leftmostCorner = corner;
 			}
-			shape->corners.push_back(leftmostCorner);
+			shape.corners.push_back(leftmostCorner);
 			
 			// build a convex shape out of the corners, in any order.
 			v2 searchDir = v2(0, 1);
@@ -195,9 +195,9 @@ namespace rw_gjk {
 				double highestCornerDot = -INFINITY;
 				v2 bestCorner;
 				for (auto &corner: corners) {
-					if (corner == shape->corners.back()) continue;
+					if (corner == shape.corners.back()) continue;
 					
-					v2 cornerDifference = corner - shape->corners.back();
+					v2 cornerDifference = corner - shape.corners.back();
 					double cornerDot = dot(searchDir, cornerDifference.normalisedOrZero());
 					
 					if (cornerDot >= 0 && cornerDot > highestCornerDot) {
@@ -209,11 +209,11 @@ namespace rw_gjk {
 				// if a valid corner was found
 				if (highestCornerDot >= 0) {
 					// check if it's the same as the first corner
-					if (bestCorner == shape->corners[0]) break; // the shape is complete
+					if (bestCorner == shape.corners[0]) break; // the shape is complete
 					else {
 						// add the corner to the shape and update the search direction
-						searchDir = (bestCorner - shape->corners.back()).normalisedOrZero();
-						shape->corners.push_back(bestCorner);
+						searchDir = (bestCorner - shape.corners.back()).normalisedOrZero();
+						shape.corners.push_back(bestCorner);
 					}
 				} else {
 					// no valid corner was found in the current search direction, so rotate it 90 degrees
@@ -222,18 +222,18 @@ namespace rw_gjk {
 			}
 			
 			// compare the shape against the original corners.
-			assert(shape->corners.size() <= corners.size());
+			assert(shape.corners.size() <= corners.size());
 			
-			if (shape->corners.size() < corners.size()) {
-				delete shape;
-				return nullptr; // at least one of the corners forms a concave angle.
+			if (shape.corners.size() < corners.size()) {
+				return false; // at least one of the corners forms a concave angle.
 			}
 		}
 		
-		shape->pos = origin;
-		shape->angle = 0;
+		*shapeOut = shape;
+		shapeOut->pos = origin;
+		shapeOut->angle = 0;
 		
-		return shape;
+		return true;
 	}
 	
 	v2 getMinkowskiDiffedEdge(Shape *shape, Shape *otherShape, v2 direction) {
