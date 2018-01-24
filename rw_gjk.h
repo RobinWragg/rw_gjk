@@ -332,10 +332,19 @@ namespace rw_gjk {
 		return improve2Simplex(simplex, searchDir);
 	}
 	
+	bool shapesAreClose(Shape *shapeA, Shape *shapeB) {
+		return shapeA->pos.x+shapeA->radius >= shapeB->pos.x-shapeB->radius
+			&& shapeA->pos.x-shapeA->radius <= shapeB->pos.x+shapeB->radius
+			&& shapeA->pos.y+shapeA->radius >= shapeB->pos.y-shapeB->radius
+			&& shapeA->pos.y-shapeA->radius <= shapeB->pos.y+shapeB->radius;
+	}
+	
 	bool shapesAreOverlapping(
 		Shape *shapeA, Shape *shapeB,
 		vector<v2> *simplexOut = nullptr // This is only used internally.
 		) {
+		
+		if (!shapesAreClose(shapeA, shapeB)) return false;
 		
 		{ // TODO: unfinished code for correctly setting TINY_NUMBER.
 			double largestRadius = max(shapeA->radius, shapeB->radius);
