@@ -308,9 +308,11 @@ namespace rw_gjk {
 	// returns true when the simplex contains the origin.
 	bool improve_simplex(vector<v2> &simplex, v2 &search_dir) {
 		if (simplex.size() == 3) {
+			// cache some basic vectors
 			v2 ab = simplex[1] - simplex[0];
 			v2 bc = simplex[2] - simplex[1];
 			v2 ca = simplex[0] - simplex[2];
+			
 			v2 ab_normal_away_from_c = ab.normal_in_direction_or_0(ca);
 			v2 bc_normal_away_from_a = bc.normal_in_direction_or_0(ab);
 			v2 ca_normal_away_from_b = ca.normal_in_direction_or_0(bc);
@@ -432,15 +434,18 @@ namespace rw_gjk {
 				int s1 = (closest_edge_index + 1) % simplex.size();
 				int s2 = (closest_edge_index + 2) % simplex.size();
 				{
-					v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+					v2 outer_normal =
+						(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
 					assert(!outer_normal.is_zero());
 					new_simplex_corner = get_minkowski_diffed_edge(shapeA, shapeB, outer_normal);
 				}
 				
 				// if the new edge is almost identical to one of the points that made the simplex line,
-				if (new_simplex_corner.distance(simplex[s0]) < TINY_NUMBER || new_simplex_corner.distance(simplex[s1]) < TINY_NUMBER) {
+				if (new_simplex_corner.distance(simplex[s0]) < TINY_NUMBER
+					|| new_simplex_corner.distance(simplex[s1]) < TINY_NUMBER) {
 					// find the point on the line that is closest to the origin
-					v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+					v2 outer_normal =
+						(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
 					assert(!outer_normal.is_zero());
 					double length_of_point = dot(outer_normal, simplex[s0]);
 					
