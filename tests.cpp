@@ -99,14 +99,16 @@ int main() {
 		print_test_name("Shapes overlap");
 		shape_a.pos = v2(42, 42);
 		shape_b.pos = v2(42, 42);
-		print_test_result(get_overlap_amount(&shape_a, &shape_b).overlapping);
+		v2 amount = get_overlap_amount(&shape_a, &shape_b);
+		print_test_result(amount.x != 0 || amount.y != 0);
 	}
 	
 	{
 		print_test_name("Shapes don't overlap");
 		shape_a.pos = v2(-10, 3);
 		shape_b.pos = v2(10, 3);
-		print_test_result(!get_overlap_amount(&shape_a, &shape_b).overlapping);
+		v2 amount = get_overlap_amount(&shape_a, &shape_b);
+		print_test_result(amount.x == 0 && amount.y == 0);
 	}
 	
 	printf("\n");
