@@ -12,6 +12,8 @@ See end of file for license information.
 // TODO: remove occurrences of while (true).
 // TODO: remove asserts and handle those states in a graceful way.
 // TODO: add caching of rotations.
+// TODO: add error strings.
+// TODO: calculate TINY_NUMBER appropriately. It has something to do with largest_radius in shapes_are_overlapping(). TINY_NUMBER is basically used as half the thickness of a line. It should be very small but never small enough to cause IEEE-float-related problems.
 
 #ifndef RW_GJK_HEADER
 #define RW_GJK_HEADER
@@ -51,14 +53,9 @@ namespace rw_gjk {
 		vector<v2> corners; // TODO: Make private?
 	};
 	
-	struct Overlap_Info {
-		bool overlapping;
-		v2 amount; // TODO: rename?
-	};
-	
 	bool try_make_shape(vector<v2> corners, Shape *shape_out);
 	
-	Overlap_Info get_overlap_info(Shape *a, Shape *b);
+	v2 get_overlap_amount(Shape *a, Shape *b);
 }
 
 #endif
@@ -70,7 +67,7 @@ namespace rw_gjk {
 #include <string>
 
 namespace rw_gjk {
-	const double TINY_NUMBER = 0.0000001; // TODO: calculate how tiny this should be in a smarter way. this is basically half the thickness of a line.
+	const double TINY_NUMBER = 0.0000001;
 	
 	double dot(const v2 &a, const v2 &b) {
 		return a.x*b.x + a.y*b.y;
@@ -115,12 +112,12 @@ namespace rw_gjk {
 	
 	v2 v2::normal_in_direction_or_0(v2 direction) const {
 		v2 normal_a = right_normal_or_zero(); // TODO: I don't think this needs to be normalised until we return.
-		double dotResult = dot(normal_a, direction);
+		double dot_result = dot(normal_a, direction);
 		
-		if (dotResult > 0) {
+		if (dot_result > 0) {
 			assert(fabs(dot(normal_a, *this)) < TINY_NUMBER);
 			return normal_a;
-		} else if (dotResult < 0) {
+		} else if (dot_result < 0) {
 			v2 normal_b = normal_a * -1;
 			assert(fabs(dot(normal_b, *this)) < TINY_NUMBER);
 			return normal_b;
@@ -344,28 +341,28 @@ namespace rw_gjk {
 	}
 	
 	bool shapes_are_overlapping(
-		Shape *shapeA, Shape *shapeB,
+		Shape *shape_a, Shape *shape_b,
 		vector<v2> *simplexOut = nullptr // This is only used internally.
 		) {
 		
-		if (!shapes_are_close(shapeA, shapeB)) return false;
+		if (!shapes_are_close(shape_a, shape_b)) return false;
 		
-		{ // TODO: unfinished code for correctly setting TINY_NUMBER.
-			double largestRadius = max(shapeA->radius, shapeB->radius);
+		{ // Unfinished code for correctly setting TINY_NUMBER. See todo list at top of file.
+			double largest_radius = max(shape_a->radius, shape_b->radius);
 			
 		}
 		
 		v2 search_direction = v2(0, 1); // this can be anything except zero
-		vector<v2> simplex = {get_minkowski_diffed_edge(shapeA, shapeB, search_direction)};
+		vector<v2> simplex = {get_minkowski_diffed_edge(shape_a, shape_b, search_direction)};
 		
 		search_direction = origin - simplex[0]; // search toward the origin
 		
 		while (true) {
 			assert(simplex.size() < 3);
-			simplex.push_back(get_minkowski_diffed_edge(shapeA, shapeB, search_direction));
+			simplex.push_back(get_minkowski_diffed_edge(shape_a, shape_b, search_direction));
 			
-			double dotResult = dot(simplex.back(), search_direction);
-			if (dotResult <= TINY_NUMBER) {
+			double dot_result = dot(simplex.back(), search_direction);
+			if (dot_result <= TINY_NUMBER) {
 				return false;
 			}
 			
@@ -378,91 +375,94 @@ namespace rw_gjk {
 		}
 	}
 	
-	Overlap_Info get_overlap_info(Shape *shapeA, Shape *shapeB) {
+	v2 get_overlap_amount(Shape *shape_a, Shape *shape_b) {
 		
-		auto get_amount_for_origin_on_edge = [shapeA, shapeB]() {
-			v2 posDifference = shapeB->pos - shapeA->pos;
+		auto get_amount_for_origin_on_edge = [shape_a, shape_b]() {
+			v2 pos_difference = shape_b->pos - shape_a->pos;
 			
-			if (posDifference.is_zero()) {
-				posDifference.x = TINY_NUMBER;
+			if (pos_difference.is_zero()) {
+				pos_difference.x = TINY_NUMBER;
 			}
 			
-			return posDifference.normalised_or_zero() * TINY_NUMBER;
+			return pos_difference.normalised_or_zero() * TINY_NUMBER;
 		};
 		
-		Overlap_Info info;
 		vector<v2> simplex;
+		if (!shapes_are_overlapping(shape_a, shape_b, &simplex)) {
+			return v2(0, 0);
+		}
 		
-		info.overlapping = shapes_are_overlapping(shapeA, shapeB, &simplex);
+		if (simplex.size() < 2) {
+			v2 amount = get_amount_for_origin_on_edge();
+			assert(!amount.is_zero());
+			return amount;
+		}
 		
-		if (info.overlapping) {
-			if (simplex.size() < 2) {
-				info.amount = get_amount_for_origin_on_edge();
-				return info;
-			}
-			
-			while (true) {
-				// find simplex line closest to origin
-				int closest_edge_index = 0;
-				{
-					double closest_distance = INFINITY;
+		while (true) {
+			// find simplex line closest to origin
+			int closest_edge_index = 0;
+			{
+				double closest_distance = INFINITY;
+				
+				for (int s0 = 0; s0 < simplex.size(); s0++) {
+					int s1 = (s0 + 1) % simplex.size();
+					int s2 = (s0 + 2) % simplex.size();
 					
-					for (int s0 = 0; s0 < simplex.size(); s0++) {
-						int s1 = (s0 + 1) % simplex.size();
-						int s2 = (s0 + 2) % simplex.size();
-						
-						v2 simplex_line = simplex[s1] - simplex[s0];
-						v2 approx_outer_normal_dir = simplex[s0] - simplex[s2];
-						v2 outer_normal = simplex_line.normal_in_direction_or_0(approx_outer_normal_dir);
-						
-						if (outer_normal.is_zero()) {
-							info.amount = get_amount_for_origin_on_edge();
-							return info;
-						}
-						
-						double distance = dot(outer_normal, simplex[s0]);
-						if (distance < closest_distance) {
-							closest_distance = distance;
-							closest_edge_index = s0;
-						}
+					v2 simplex_line = simplex[s1] - simplex[s0];
+					v2 approx_outer_normal_dir = simplex[s0] - simplex[s2];
+					v2 outer_normal = simplex_line.normal_in_direction_or_0(approx_outer_normal_dir);
+					
+					if (outer_normal.is_zero()) {
+						v2 amount = get_amount_for_origin_on_edge();
+						assert(!amount.is_zero());
+						return amount;
+					}
+					
+					double distance = dot(outer_normal, simplex[s0]);
+					if (distance < closest_distance) {
+						closest_distance = distance;
+						closest_edge_index = s0;
 					}
 				}
+			}
+			
+			// get outer normal of the line and get minkowski diffed edge in that direction
+			v2 new_simplex_corner;
+			int s0 = closest_edge_index;
+			int s1 = (closest_edge_index + 1) % simplex.size();
+			int s2 = (closest_edge_index + 2) % simplex.size();
+			{
+				v2 outer_normal =
+					(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+				assert(!outer_normal.is_zero());
+				new_simplex_corner = get_minkowski_diffed_edge(shape_a, shape_b, outer_normal);
+			}
+			
+			// if the new edge is almost identical to one of the points that made the simplex line,
+			if (new_simplex_corner.distance(simplex[s0]) < TINY_NUMBER
+				|| new_simplex_corner.distance(simplex[s1]) < TINY_NUMBER) {
+				// find the point on the line that is closest to the origin
+				v2 outer_normal =
+					(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+				assert(!outer_normal.is_zero());
+				double length_of_point = dot(outer_normal, simplex[s0]);
 				
-				// get outer normal of the line and get minkowski diffed edge in that direction
-				v2 new_simplex_corner;
-				int s0 = closest_edge_index;
-				int s1 = (closest_edge_index + 1) % simplex.size();
-				int s2 = (closest_edge_index + 2) % simplex.size();
-				{
-					v2 outer_normal =
-						(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
-					assert(!outer_normal.is_zero());
-					new_simplex_corner = get_minkowski_diffed_edge(shapeA, shapeB, outer_normal);
-				}
-				
-				// if the new edge is almost identical to one of the points that made the simplex line,
-				if (new_simplex_corner.distance(simplex[s0]) < TINY_NUMBER
-					|| new_simplex_corner.distance(simplex[s1]) < TINY_NUMBER) {
-					// find the point on the line that is closest to the origin
-					v2 outer_normal =
-						(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
-					assert(!outer_normal.is_zero());
-					double length_of_point = dot(outer_normal, simplex[s0]);
-					
-					// the difference between the origin and that point is the overlap amount.
-					info.amount = outer_normal.normalised_or_zero() * (length_of_point + TINY_NUMBER);
-				
-					// break out of the loop
-					break;
-				} else {
-					// add the new corner to the simplex, turning the existing line into two.
-					simplex.insert(simplex.begin()+s1, new_simplex_corner);
-					assert(!contains_duplicates(simplex));
-				}
+				// the difference between the origin and that point is the overlap amount.
+				v2 amount = outer_normal.normalised_or_zero() * (length_of_point + TINY_NUMBER);
+				assert(!amount.is_zero());
+				return amount;
+			} else {
+				// add the new corner to the simplex, turning the existing line into two.
+				simplex.insert(simplex.begin()+s1, new_simplex_corner);
+				assert(!contains_duplicates(simplex));
 			}
 		}
 		
-		return info;
+		// Control should never reach here, unless we break out of the 'while (true)'' loop to prevent
+		// an infinite loop, at which point we should write an error description.
+		// see the todo list.
+		assert(false);
+		return v2(NAN, NAN);
 	}
 }
 

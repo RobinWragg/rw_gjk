@@ -91,7 +91,7 @@ int main() {
 		print_test_result(!try_make_shape(corners, &shape));
 	}
 	
-	printf("\nget_overlap_info():\n");
+	printf("\nget_overlap_amount():\n");
 	Shape shape_a, shape_b;
 	try_make_shape({v2(-1, -0.5), v2(1, -0.5), v2(0, 1)}, &shape_a);
 	try_make_shape({v2(-1, -0.5), v2(1, -0.5), v2(0, 1)}, &shape_b);
@@ -99,14 +99,14 @@ int main() {
 		print_test_name("Shapes overlap");
 		shape_a.pos = v2(42, 42);
 		shape_b.pos = v2(42, 42);
-		print_test_result(get_overlap_info(&shape_a, &shape_b).overlapping);
+		print_test_result(get_overlap_amount(&shape_a, &shape_b).overlapping);
 	}
 	
 	{
 		print_test_name("Shapes don't overlap");
 		shape_a.pos = v2(-10, 3);
 		shape_b.pos = v2(10, 3);
-		print_test_result(!get_overlap_info(&shape_a, &shape_b).overlapping);
+		print_test_result(!get_overlap_amount(&shape_a, &shape_b).overlapping);
 	}
 	
 	printf("\n");
