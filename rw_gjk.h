@@ -51,9 +51,6 @@ namespace rw_gjk {
 		double radius;
 		
 		vector<v2> corners;
-		
-		float cached_angle;
-		vector<v2> cached_corners;
 	};
 	
 	bool try_make_shape(vector<v2> corners, Shape *shape_out);
@@ -240,20 +237,8 @@ namespace rw_gjk {
 		*shape_out = shape;
 		shape_out->pos = origin;
 		shape_out->angle = 0;
-		shape_out->cached_angle = NAN;
-		shape_out->cached_corners.resize(shape_out->corners.size());
 		
 		return true;
-	}
-	
-	void update_shape_cache(Shape *shape) {
-		if (shape->angle == shape->cached_angle) return;
-		
-		for (int i = 0; i < shape->corners.size(); i++) {
-			shape->cached_corners[i] = shape->corners[i].rotated(shape->angle);
-		}
-		
-		shape->cached_angle = shape->angle;
 	}
 	
 	v2 get_minkowski_diffed_edge(Shape *shape, Shape *other_shape, v2 direction) {
