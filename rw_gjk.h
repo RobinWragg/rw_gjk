@@ -34,7 +34,7 @@ namespace rw_gjk {
 		bool is_zero() const;
 		v2 normalised_or_zero() const;
 		v2 right_normal_or_zero() const;
-		v2 normal_in_direction_or_0(v2 direction) const;
+		v2 normal_in_direction_or_zero(v2 direction) const;
 		v2 rotated(double radians) const;
 		
 		bool operator==(const v2 &) const;
@@ -47,13 +47,16 @@ namespace rw_gjk {
 	
 	struct Shape {
 		v2 pos;
-		float angle;
 		double radius;
+		bool is_circle;
 		
+		float angle;
 		vector<v2> corners;
+		vector<v2> debug_simplex;
 	};
 	
-	bool try_make_shape(vector<v2> corners, Shape *shape_out);
+	void make_circle(double radius, Shape *shape_out);
+	bool try_make_polygon(vector<v2> corners, Shape *shape_out);
 	
 	v2 get_overlap_amount(Shape *a, Shape *b);
 }
@@ -68,6 +71,7 @@ namespace rw_gjk {
 
 namespace rw_gjk {
 	const double TINY_NUMBER = 0.0000001;
+	const int LOOP_LIMIT = 1024;
 	
 	double dot(const v2 &a, const v2 &b) {
 		return a.x*b.x + a.y*b.y;
@@ -110,7 +114,7 @@ namespace rw_gjk {
 		return v2(y, -x).normalised_or_zero();
 	}
 	
-	v2 v2::normal_in_direction_or_0(v2 direction) const {
+	v2 v2::normal_in_direction_or_zero(v2 direction) const {
 		v2 normal_a = right_normal_or_zero(); // TODO: I don't think this needs to be normalised until we return.
 		double dot_result = dot(normal_a, direction);
 		
@@ -168,7 +172,14 @@ namespace rw_gjk {
 		return false;
 	}
 	
-	bool try_make_shape(vector<v2> corners, Shape *shape_out) {
+	void make_circle(double radius, Shape *shape_out) {
+		shape_out->radius = radius;
+		shape_out->pos = origin;
+		shape_out->angle = 0;
+		shape_out->is_circle = true;
+	}
+	
+	bool try_make_polygon(vector<v2> corners, Shape *shape_out) {
 		if (corners.size() < 3) {
 			return false;
 		}
@@ -237,30 +248,35 @@ namespace rw_gjk {
 		*shape_out = shape;
 		shape_out->pos = origin;
 		shape_out->angle = 0;
+		shape_out->is_circle = false;
 		
 		return true;
 	}
 	
 	v2 get_minkowski_diffed_edge(Shape *shape, Shape *other_shape, v2 direction) {
-		auto getEdgeOfRotatedShape = [](Shape *shape, v2 direction) {
-			v2 best_corner;
-			double best_dot = -INFINITY;
-			
-			for (const auto &corner: shape->corners) {
-				v2 rotated_corner = corner.rotated(shape->angle);
-				double new_dot = dot(rotated_corner, direction);
+		auto get_edge_of_rotated_shape = [](Shape *shape, v2 direction) {
+			if (shape->is_circle) {
+				return direction.normalised_or_zero() * shape->radius;
+			} else {
+				v2 best_corner;
+				double best_dot = -INFINITY;
 				
-				if (new_dot > best_dot) {
-					best_corner = rotated_corner;
-					best_dot = new_dot;
+				for (const auto &corner: shape->corners) {
+					v2 rotated_corner = corner.rotated(shape->angle);
+					double new_dot = dot(rotated_corner, direction);
+					
+					if (new_dot > best_dot) {
+						best_corner = rotated_corner;
+						best_dot = new_dot;
+					}
 				}
+				
+				return best_corner;
 			}
-			
-			return best_corner;
 		};
 		
-		v2 shape_world_edge = shape->pos + getEdgeOfRotatedShape(shape, direction);
-		v2 other_shape_world_edge = other_shape->pos + getEdgeOfRotatedShape(other_shape, -direction);
+		v2 shape_world_edge = shape->pos + get_edge_of_rotated_shape(shape, direction);
+		v2 other_shape_world_edge = other_shape->pos + get_edge_of_rotated_shape(other_shape, -direction);
 		return shape_world_edge - other_shape_world_edge;
 	}
 	
@@ -281,7 +297,7 @@ namespace rw_gjk {
 			// search on the side of the 2-simplex that contains the origin.
 			v2 simplex_line = simplex[1] - simplex[0];
 			v2 direction_to_origin = origin - simplex[0];
-			search_dir = simplex_line.normal_in_direction_or_0(direction_to_origin);
+			search_dir = simplex_line.normal_in_direction_or_zero(direction_to_origin);
 		} else if (dot(simplex[1] - simplex[0], origin - simplex[0]) <= 0) {
 			// the closest part of the simplex is the point simplex[0], so update the simplex.
 			simplex = {simplex[0]};
@@ -310,9 +326,9 @@ namespace rw_gjk {
 			v2 bc = simplex[2] - simplex[1];
 			v2 ca = simplex[0] - simplex[2];
 			
-			v2 ab_normal_away_from_c = ab.normal_in_direction_or_0(ca);
-			v2 bc_normal_away_from_a = bc.normal_in_direction_or_0(ab);
-			v2 ca_normal_away_from_b = ca.normal_in_direction_or_0(bc);
+			v2 ab_normal_away_from_c = ab.normal_in_direction_or_zero(ca);
+			v2 bc_normal_away_from_a = bc.normal_in_direction_or_zero(ab);
+			v2 ca_normal_away_from_b = ca.normal_in_direction_or_zero(bc);
 			
 			// find which side of the triangle the origin is on, or if it's inside it.
 			if (dot(ab_normal_away_from_c, origin - simplex[0]) > 0) {
@@ -342,7 +358,7 @@ namespace rw_gjk {
 	
 	bool shapes_are_overlapping(
 		Shape *shape_a, Shape *shape_b,
-		vector<v2> *simplexOut = nullptr // This is only used internally.
+		vector<v2> *simplex_out = nullptr // This is only used internally.
 		) {
 		
 		// if (!shapes_are_close(shape_a, shape_b)) return false; // TODO: uncomment this.
@@ -352,7 +368,7 @@ namespace rw_gjk {
 			
 		}
 		
-		v2 search_direction = v2(0, 1); // this can be anything except zero
+		v2 search_direction = v2(1, 0); // this can be anything except zero
 		vector<v2> simplex = {get_minkowski_diffed_edge(shape_a, shape_b, search_direction)};
 		
 		search_direction = origin - simplex[0]; // search toward the origin
@@ -369,7 +385,7 @@ namespace rw_gjk {
 			assert(!contains_duplicates(simplex));
 			
 			if (improve_simplex(simplex, search_direction)) {
-				if (simplexOut != nullptr) *simplexOut = simplex;
+				if (simplex_out != nullptr) *simplex_out = simplex;
 				return true;	
 			}
 		}
@@ -395,10 +411,12 @@ namespace rw_gjk {
 		if (simplex.size() < 2) {
 			v2 amount = get_amount_for_origin_on_edge();
 			assert(!amount.is_zero());
+			shape_a->debug_simplex = simplex;
+			shape_b->debug_simplex = simplex;
 			return amount;
 		}
 		
-		while (true) {
+		for (int loop = 0; loop < LOOP_LIMIT; loop++) {
 			// find simplex line closest to origin
 			int closest_edge_index = 0;
 			{
@@ -410,11 +428,13 @@ namespace rw_gjk {
 					
 					v2 simplex_line = simplex[s1] - simplex[s0];
 					v2 approx_outer_normal_dir = simplex[s0] - simplex[s2];
-					v2 outer_normal = simplex_line.normal_in_direction_or_0(approx_outer_normal_dir);
+					v2 outer_normal = simplex_line.normal_in_direction_or_zero(approx_outer_normal_dir);
 					
 					if (outer_normal.is_zero()) {
 						v2 amount = get_amount_for_origin_on_edge();
 						assert(!amount.is_zero());
+						shape_a->debug_simplex = simplex;
+						shape_b->debug_simplex = simplex;
 						return amount;
 					}
 					
@@ -433,23 +453,26 @@ namespace rw_gjk {
 			int s2 = (closest_edge_index + 2) % simplex.size();
 			{
 				v2 outer_normal =
-					(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+					(simplex[s1] - simplex[s0]).normal_in_direction_or_zero(simplex[s0] - simplex[s2]);
 				assert(!outer_normal.is_zero());
 				new_simplex_corner = get_minkowski_diffed_edge(shape_a, shape_b, outer_normal);
 			}
 			
 			// if the new edge is almost identical to one of the points that made the simplex line,
-			if (new_simplex_corner.distance(simplex[s0]) < TINY_NUMBER
-				|| new_simplex_corner.distance(simplex[s1]) < TINY_NUMBER) {
+			const double SAME_POINT_TOLERANCE = 0.00001;
+			if (new_simplex_corner.distance(simplex[s0]) < SAME_POINT_TOLERANCE
+				|| new_simplex_corner.distance(simplex[s1]) < SAME_POINT_TOLERANCE) {
 				// find the point on the line that is closest to the origin
 				v2 outer_normal =
-					(simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - simplex[s2]);
+					(simplex[s1] - simplex[s0]).normal_in_direction_or_zero(simplex[s0] - simplex[s2]);
 				assert(!outer_normal.is_zero());
 				double length_of_point = dot(outer_normal, simplex[s0]);
 				
 				// the difference between the origin and that point is the overlap amount.
 				v2 amount = outer_normal.normalised_or_zero() * (length_of_point + TINY_NUMBER);
 				assert(!amount.is_zero());
+				shape_a->debug_simplex = simplex;
+				shape_b->debug_simplex = simplex;
 				return amount;
 			} else {
 				// add the new corner to the simplex, turning the existing line into two.
@@ -461,8 +484,10 @@ namespace rw_gjk {
 		// Control should never reach here, unless we break out of the 'while (true)'' loop to prevent
 		// an infinite loop, at which point we should write an error description.
 		// see the todo list.
-		assert(false);
-		return v2(NAN, NAN);
+		// assert(false);
+		shape_a->debug_simplex = simplex;
+		shape_b->debug_simplex = simplex;
+		return v2(INFINITY, INFINITY);
 	}
 }
 
