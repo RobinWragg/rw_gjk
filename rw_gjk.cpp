@@ -230,13 +230,15 @@ namespace rw_gjk {
 		
 		if (origin_is_between_points(simplex[0], simplex[1])) {
 			v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_zero();
-			double dot_result = dot(line_normal, ORIGIN - simplex[0]);
-			if (fabs(dot_result) <= TINY_NUMBER) return OL_ON_LINE;
+			double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
+			
+			if (fabs(origin_distance_from_line) <= TINY_NUMBER) return OL_ON_LINE;
 			
 			return OL_NEAR_LINE;
 		}
 		
 		if (dot(simplex[1] - simplex[0], ORIGIN - simplex[0]) <= 0) return OL_NEAR_CORNER_0;
+		
 		assert(dot(simplex[0] - simplex[1], ORIGIN - simplex[1]) <= 0);
 		return OL_NEAR_CORNER_1;
 	}
