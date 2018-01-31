@@ -224,36 +224,33 @@ namespace rw_gjk {
 		OL_NEAR_CORNER_1
 	};
 	
-	Origin_Location get_origin_location_in_2_simplex(vector<v2> &simplex) {
-		assert(is_valid(simplex));
-		assert(simplex.size() == 2);
-		
-		if (origin_is_between_points(simplex[0], simplex[1])) {
-			v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_zero();
-			double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
-			
-			if (fabs(origin_distance_from_line) <= TINY_NUMBER) return OL_ON_LINE;
-			
-			return OL_NEAR_LINE;
-		}
-		
-		if (dot(simplex[1] - simplex[0], ORIGIN - simplex[0]) <= 0) return OL_NEAR_CORNER_0;
-		
-		assert(dot(simplex[0] - simplex[1], ORIGIN - simplex[1]) <= 0);
-		return OL_NEAR_CORNER_1;
-	}
-	
 	bool improve_2_simplex(vector<v2> &simplex, v2 &search_dir) {
 		assert(simplex.size() == 2);
 		
-		switch (get_origin_location_in_2_simplex(simplex)) {
+		Origin_Location origin_location;
+		{
+			if (origin_is_between_points(simplex[0], simplex[1])) {
+				v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_zero();
+				double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
+				
+				if (fabs(origin_distance_from_line) <= TINY_NUMBER) origin_location = OL_ON_LINE;
+				else origin_location = OL_NEAR_LINE;
+				
+			} else if (dot(simplex[1] - simplex[0], ORIGIN - simplex[0]) <= 0) {
+				origin_location = OL_NEAR_CORNER_0;
+			} else {
+				assert(dot(simplex[0] - simplex[1], ORIGIN - simplex[1]) <= 0);
+				origin_location = OL_NEAR_CORNER_1;
+			}
+		}
+		
+		switch (origin_location) {
 			case OL_ON_LINE: {
 				return true;
 				break;
 			}
 			case OL_NEAR_LINE: {
-				// the simplex is correct.
-				// search on the side of the 2-simplex that contains the origin.
+				// The simplex is correct. Search on the side of the 2-simplex that contains the origin.
 				v2 simplex_line = simplex[1] - simplex[0];
 				v2 direction_to_origin = ORIGIN - simplex[0];
 				search_dir = simplex_line.normal_in_direction_or_zero(direction_to_origin);
