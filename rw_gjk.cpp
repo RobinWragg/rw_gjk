@@ -26,7 +26,6 @@ namespace rw_gjk {
 	using namespace std;
 	
 	const double TINY_NUMBER = 0.0000001;
-	const int LOOP_LIMIT = 1024;
 	v2 ORIGIN = v2(0, 0);
 	
 	struct Shape {
