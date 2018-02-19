@@ -182,30 +182,32 @@ namespace rw_gjk {
 	}
 	
 	v2 get_minkowski_diffed_corner(Shape *shape, Shape *other_shape, v2 direction) {
-		auto get_corner_of_rotated_shape = [](Shape *shape, v2 direction) {
+		auto get_baked_corner_of_shape = [](Shape *shape, v2 corner_direction) {
 			if (shape->is_circle) {
-				return direction.normalised_or_zero() * shape->radius;
+				return shape->pos + (corner_direction.normalised_or_zero() * shape->radius);
 			} else {
-				v2 best_corner;
+				v2 best_rotated_corner;
 				double best_dot = -INFINITY;
+				
+				// TODO: Build a rotation matrix at this point and use it in the for-loop below.
 				
 				for (const auto &corner: shape->corners) {
 					v2 rotated_corner = corner.rotated(shape->angle);
-					double new_dot = dot(rotated_corner, direction);
+					double new_dot = dot(rotated_corner, corner_direction);
 					
 					if (new_dot > best_dot) {
-						best_corner = rotated_corner;
+						best_rotated_corner = rotated_corner;
 						best_dot = new_dot;
 					}
 				}
 				
-				return best_corner;
+				return shape->pos + best_rotated_corner;
 			}
 		};
 		
-		v2 shape_world_corner = shape->pos + get_corner_of_rotated_shape(shape, direction);
-		v2 other_shape_world_corner = other_shape->pos + get_corner_of_rotated_shape(other_shape, -direction);
-		return shape_world_corner - other_shape_world_corner;
+		v2 baked_corner = get_baked_corner_of_shape(shape, direction);
+		v2 other_baked_corner = get_baked_corner_of_shape(other_shape, -direction);
+		return baked_corner - other_baked_corner;
 	}
 	
 	bool origin_is_between_points(v2 a, v2 b) {
