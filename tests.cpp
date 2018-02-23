@@ -19,13 +19,27 @@ void print_test_name(string name) {
 		name.push_back('_');
 	}
 	printf("%s", name.c_str());
+	fflush(stdout);
 }
 
 int num_failed_tests = 0;
 
 void print_test_result(bool success) {
 	printf(success ? "success\n" : "FAIL\n");
+	fflush(stdout);
 	if (!success) num_failed_tests++;
+}
+
+double randf() {
+	static bool randInitialised = false;
+	if (!randInitialised) {
+		srand(int(time(NULL)));
+		rand();
+		rand();
+		rand();
+		randInitialised = true;
+	}
+	return (rand() % 1000000000) / 1000000000.0;
 }
 
 int main() {
@@ -147,11 +161,11 @@ int main() {
 		Shape shape_a, shape_b;
 		const double identical_polygons_width = 0.2;
 		const double identical_polygons_half_width = identical_polygons_width / 2;
-		vector<rw_gjk::v2> corners = {
-			rw_gjk::v2(-identical_polygons_half_width, -identical_polygons_half_width),
-			rw_gjk::v2(identical_polygons_half_width, -identical_polygons_half_width),
-			rw_gjk::v2(identical_polygons_half_width, identical_polygons_half_width),
-			rw_gjk::v2(-identical_polygons_half_width, identical_polygons_half_width)
+		vector<v2> corners = {
+			v2(-identical_polygons_half_width, -identical_polygons_half_width),
+			v2(identical_polygons_half_width, -identical_polygons_half_width),
+			v2(identical_polygons_half_width, identical_polygons_half_width),
+			v2(-identical_polygons_half_width, identical_polygons_half_width)
 		};
 		try_make_polygon(corners, &shape_a);
 		try_make_polygon(corners, &shape_b);
@@ -206,6 +220,45 @@ int main() {
 			shape_b.pos = v2(10, 3);
 			print_test_result(!shapes_are_overlapping(&shape_a, &shape_b));
 		}
+		
+		{
+			print_test_name("Brute force test");
+			bool success = true;
+			
+			for (int outer = 0; outer < 100; outer++) {
+				Shape shapes[4];
+				
+				success = success && try_make_polygon({
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5)
+				}, &shapes[0]);
+				success = success && try_make_polygon({
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5)
+				}, &shapes[1]);
+				
+				make_circle(randf()*3, &shapes[2]);
+				make_circle(randf()*3, &shapes[3]);
+				
+				for (int inner = 0; inner < 100; inner++) {
+					for (int s = 0; s < 4; s++) {
+						shapes[s].pos.x = (randf() - 0.5) * 10;
+						shapes[s].pos.y = (randf() - 0.5) * 10;
+						shapes[s].angle = randf() * 2*M_PI;
+					}
+					
+					for (int s0 = 0; s0 < 4; s0++) {
+						for (int s1 = 0; s1 < 4; s1++) {
+							shapes_are_overlapping(&shapes[s0], &shapes[s1]);
+						}
+					}
+				} // end inner
+			} // end outer
+			
+			print_test_result(success);
+		}
 	} // end shapes_are_overlapping()
 	
 	{
@@ -214,11 +267,11 @@ int main() {
 		Shape shape_a, shape_b;
 		const double identical_polygons_width = 0.2;
 		const double identical_polygons_half_width = identical_polygons_width / 2;
-		vector<rw_gjk::v2> corners = {
-			rw_gjk::v2(-identical_polygons_half_width, -identical_polygons_half_width),
-			rw_gjk::v2(identical_polygons_half_width, -identical_polygons_half_width),
-			rw_gjk::v2(identical_polygons_half_width, identical_polygons_half_width),
-			rw_gjk::v2(-identical_polygons_half_width, identical_polygons_half_width)
+		vector<v2> corners = {
+			v2(-identical_polygons_half_width, -identical_polygons_half_width),
+			v2(identical_polygons_half_width, -identical_polygons_half_width),
+			v2(identical_polygons_half_width, identical_polygons_half_width),
+			v2(-identical_polygons_half_width, identical_polygons_half_width)
 		};
 		try_make_polygon(corners, &shape_a);
 		try_make_polygon(corners, &shape_b);

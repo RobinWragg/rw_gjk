@@ -345,7 +345,6 @@ namespace rw_gjk {
 		}
 		
 		if (simplex.size() < 3) {
-			printf("get_overlap_amount: simplex is < 3\n");
 			v2 pos_vector = (shape_b->pos - shape_a->pos).normalised_or_0();
 			
 			if (pos_vector.is_0()) {
@@ -358,7 +357,7 @@ namespace rw_gjk {
 		return v2(0, 0); // NO-OP
 		
 		// NOTE NOTE NOTE NOTE: These comments don't take into account origins directly on lines.
-		// begin infinite loop
+		// begin loop
 			// get simplex line closest to origin
 			
 			// get the outer normal of that line and get minkowski diffed corner in that direction
