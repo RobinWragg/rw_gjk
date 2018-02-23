@@ -68,7 +68,7 @@ namespace rw_gjk {
 				if (corner == convex_corners.back()) continue;
 				
 				v2 corner_difference = corner - convex_corners.back();
-				double corner_dot = dot(search_dir, corner_difference.normalised_or_zero());
+				double corner_dot = dot(search_dir, corner_difference.normalised_or_0());
 				
 				if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
 					highest_corner_dot = corner_dot;
@@ -82,12 +82,12 @@ namespace rw_gjk {
 				if (best_corner == convex_corners[0]) break; // the convex shape is complete
 				else {
 					// add the corner to the shape and update the search direction
-					search_dir = (best_corner - convex_corners.back()).normalised_or_zero();
+					search_dir = (best_corner - convex_corners.back()).normalised_or_0();
 					convex_corners.push_back(best_corner);
 				}
 			} else {
 				// no valid corner was found in the current search direction, so rotate it 90 degrees
-				search_dir = search_dir.right_normal_or_zero();
+				search_dir = search_dir.right_normal_or_0();
 			}
 		}
 		
@@ -184,7 +184,7 @@ namespace rw_gjk {
 	v2 get_minkowski_diffed_corner(Shape *shape, Shape *other_shape, v2 direction) {
 		auto get_baked_corner_of_shape = [](Shape *shape, v2 corner_direction) {
 			if (shape->is_circle) {
-				return shape->pos + (corner_direction.normalised_or_zero() * shape->radius);
+				return shape->pos + (corner_direction.normalised_or_0() * shape->radius);
 			} else {
 				v2 best_rotated_corner;
 				double best_dot = -INFINITY;
@@ -231,7 +231,7 @@ namespace rw_gjk {
 		Origin_Location origin_location;
 		{
 			if (origin_is_between_points(simplex[0], simplex[1])) {
-				v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_zero();
+				v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_0();
 				double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
 				
 				if (fabs(origin_distance_from_line) <= TINY_NUMBER) origin_location = OL_ON_LINE;
@@ -254,17 +254,17 @@ namespace rw_gjk {
 				// The simplex is correct. Search on the side of the 2-simplex that contains the origin.
 				v2 simplex_line = simplex[1] - simplex[0];
 				v2 direction_to_origin = ORIGIN - simplex[0];
-				search_dir = simplex_line.normal_in_direction_or_zero(direction_to_origin);
+				search_dir = simplex_line.normal_in_direction_or_0(direction_to_origin);
 				break;
 			}
 			case OL_NEAR_CORNER_0: {
 				simplex = {simplex[0]};
-				search_dir = (ORIGIN - simplex[0]).normalised_or_zero();
+				search_dir = (ORIGIN - simplex[0]).normalised_or_0();
 				break;
 			}
 			case OL_NEAR_CORNER_1: {
 				simplex = {simplex[1]};
-				search_dir = (ORIGIN - simplex[1]).normalised_or_zero();
+				search_dir = (ORIGIN - simplex[1]).normalised_or_0();
 				break;
 			}
 			default: {
@@ -285,9 +285,9 @@ namespace rw_gjk {
 			v2 bc = simplex[2] - simplex[1];
 			v2 ca = simplex[0] - simplex[2];
 			
-			v2 ab_normal_away_from_c = ab.normal_in_direction_or_zero(ca);
-			v2 bc_normal_away_from_a = bc.normal_in_direction_or_zero(ab);
-			v2 ca_normal_away_from_b = ca.normal_in_direction_or_zero(bc);
+			v2 ab_normal_away_from_c = ab.normal_in_direction_or_0(ca);
+			v2 bc_normal_away_from_a = bc.normal_in_direction_or_0(ab);
+			v2 ca_normal_away_from_b = ca.normal_in_direction_or_0(bc);
 			
 			// find which side of the triangle the origin is on, or if it's inside it.
 			if (dot(ab_normal_away_from_c, ORIGIN - simplex[0]) > 0) {
@@ -335,7 +335,26 @@ namespace rw_gjk {
 		}
 	}
 	
+	// Returns the amount that a is overlapping b.
+	// Negating this amount from a->pos will resolve the overlap.
 	v2 get_overlap_amount(Shape *shape_a, Shape *shape_b) {
+		vector<v2> simplex;
+		
+		if (!shapes_are_overlapping(shape_a, shape_b, &simplex)) {
+			return v2(0, 0);
+		}
+		
+		if (simplex.size() < 3) {
+			printf("get_overlap_amount: simplex is < 3\n");
+			v2 pos_vector = (shape_b->pos - shape_a->pos).normalised_or_0();
+			
+			if (pos_vector.is_0()) {
+				pos_vector.x = 1;
+			}
+			
+			return pos_vector * TINY_NUMBER;
+		}
+		
 		return v2(0, 0); // NO-OP
 		
 		// NOTE NOTE NOTE NOTE: These comments don't take into account origins directly on lines.

@@ -6,10 +6,10 @@ struct v2 {
 	
 	double length() const;
 	double distance(const v2 &) const;
-	bool is_zero() const;
-	v2 normalised_or_zero() const;
-	v2 right_normal_or_zero() const;
-	v2 normal_in_direction_or_zero(v2 direction) const;
+	bool is_0() const;
+	v2 normalised_or_0() const;
+	v2 right_normal_or_0() const;
+	v2 normal_in_direction_or_0(v2 direction) const;
 	v2 rotated(double radians) const;
 	
 	bool operator==(const v2 &) const;
@@ -44,12 +44,12 @@ double v2::distance(const v2 &rh) const {
 	return hypot(x - rh.x, y - rh.y);
 }
 
-bool v2::is_zero() const {
+bool v2::is_0() const {
 	return x == 0 && y == 0;
 }
 
-v2 v2::normalised_or_zero() const {
-	if (is_zero()) {
+v2 v2::normalised_or_0() const {
+	if (is_0()) {
 		return v2(0, 0);
 	}
 	
@@ -58,12 +58,12 @@ v2 v2::normalised_or_zero() const {
 	return *this / l;
 }
 
-v2 v2::right_normal_or_zero() const {
-	return v2(y, -x).normalised_or_zero();
+v2 v2::right_normal_or_0() const {
+	return v2(y, -x).normalised_or_0();
 }
 
-v2 v2::normal_in_direction_or_zero(v2 direction) const {
-	v2 normal_a = right_normal_or_zero(); // TODO: I don't think this needs to be normalised until we return.
+v2 v2::normal_in_direction_or_0(v2 direction) const {
+	v2 normal_a = right_normal_or_0(); // TODO: I don't think this needs to be normalised until we return.
 	double dot_result = dot(normal_a, direction);
 	
 	if (dot_result > 0) {
