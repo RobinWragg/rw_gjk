@@ -49,19 +49,19 @@ int main() {
 	
 	printf("\nis_convex():\n");
 	{
-		print_test_name("Valid test A");
+		print_test_name("Valid polygon A");
 		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1) };
 		print_test_result(is_convex(corners));
 	}
 	
 	{
-		print_test_name("Valid test B");
+		print_test_name("Valid polygon B");
 		vector<v2> corners = { v2(1, 1), v2(0, 0), v2(0, 1) };
 		print_test_result(is_convex(corners));
 	}
 	
 	{
-		print_test_name("Valid test C");
+		print_test_name("Valid polygon C");
 		vector<v2> corners = {
 			v2(0.38129108817537805, 0.0073923092139486363),
 			v2(-0.48871174908274423, 0.034026436793289747),
@@ -71,7 +71,7 @@ int main() {
 	}
 	
 	{
-		print_test_name("Valid test D");
+		print_test_name("Valid polygon D");
 		vector<v2> corners = {
 			v2(-0.48871174908274423, 0.034026436793289747),
 			v2(-0.078922328003752942, -0.41132716476704667),
@@ -81,7 +81,7 @@ int main() {
 	}
 	
 	{
-		print_test_name("Valid test E");
+		print_test_name("Valid polygon E");
 		vector<v2> corners = {
 			v2(-0.078922328003752942, -0.41132716476704667),
 			v2(-0.48871174908274423, 0.034026436793289747),
@@ -91,13 +91,13 @@ int main() {
 	}
 	
 	{
-		print_test_name("Valid test F");
+		print_test_name("Valid polygon F");
 		vector<v2> corners = { v2(0, 0), v2(1, 1), v2(0, 1) };
 		print_test_result(is_convex(corners));
 	}
 	
 	{
-		print_test_name("Valid test G");
+		print_test_name("Valid polygon G");
 		vector<v2> corners = {
 			v2(0.2182808, 0.0000000000000000069388939039072284),
 		  v2(0.000000000000000023390227265590813, -0.2182808),
@@ -108,7 +108,7 @@ int main() {
 	}
 	
 	{
-		print_test_name("Valid test H");
+		print_test_name("Valid polygon H");
 		vector<v2> corners = {
 			v2(0.32557760000000002, 0.0000000000000000092518585385429707),
 			v2(0.16278880000000004, -0.28195847250316841),
@@ -121,25 +121,25 @@ int main() {
 	}
 	
 	{
-		print_test_name("Invalid test A - points are in-line");
+		print_test_name("Invalid polygon A - points are in-line");
 		vector<v2> corners = { v2(2, 0), v2(1, 1), v2(2, 1), v2(3, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid test B - points are in-line");
+		print_test_name("Invalid polygon B - points are in-line");
 		vector<v2> corners = { v2(3, 1), v2(2, 0), v2(1, 1), v2(2, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid test C - points are in-line");
+		print_test_name("Invalid polygon C - points are in-line");
 		vector<v2> corners = { v2(2, 1), v2(3, 1), v2(2, 0), v2(1, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid test D - points are in-line");
+		print_test_name("Invalid polygon D - points are in-line");
 		vector<v2> corners = { v2(-1, 0), v2(-1, 1), v2(1, 0), v2(-1, -1) };
 		print_test_result(!is_convex(corners));
 	}
@@ -398,6 +398,45 @@ int main() {
 			shape_b.pos = v2(10, 3);
 			v2 amount = get_overlap_amount(&shape_a, &shape_b);
 			print_test_result(amount.x == 0 && amount.y == 0);
+		}
+		
+		{
+			print_test_name("Brute force test");
+			bool success = true;
+			
+			for (int outer = 0; outer < 100; outer++) {
+				Shape shapes[4];
+				
+				success = success && try_make_polygon({
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5)
+				}, &shapes[0]);
+				success = success && try_make_polygon({
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5),
+					v2(randf()-0.5, randf()-0.5)
+				}, &shapes[1]);
+				
+				make_circle(randf()*3, &shapes[2]);
+				make_circle(randf()*3, &shapes[3]);
+				
+				for (int inner = 0; inner < 100; inner++) {
+					for (int s = 0; s < 4; s++) {
+						shapes[s].pos.x = (randf() - 0.5) * 10;
+						shapes[s].pos.y = (randf() - 0.5) * 10;
+						shapes[s].angle = randf() * 2*M_PI;
+					}
+					
+					for (int s0 = 0; s0 < 4; s0++) {
+						for (int s1 = 0; s1 < 4; s1++) {
+							get_overlap_amount(&shapes[s0], &shapes[s1]);
+						}
+					}
+				} // end inner
+			} // end outer
+			
+			print_test_result(success);
 		}
 	} // end get_overlap_amount()
 	

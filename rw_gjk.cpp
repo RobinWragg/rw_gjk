@@ -348,7 +348,6 @@ namespace rw_gjk {
 		}
 		
 		// NOTE NOTE NOTE NOTE: These comments don't take into account origins directly on lines.
-		// begin loop
 		while (true) {
 			// get simplex line closest to origin
 			double closest_line_distance = INFINITY;
@@ -357,34 +356,38 @@ namespace rw_gjk {
 				int s1 = (s0+1) % simplex.size();
 				v2 simplex_line_normal = (simplex[s1] - simplex[s0]).right_normal_or_0();
 				
-				// This should never be zero as it means two simplex points are identical.
-				assert(!simplex_line_normal.is_0());
+				double line_distance = fabs(dot(simplex_line_normal, ORIGIN - simplex[s0]));
 				
-				double origin_distance = fabs(dot(simplex_line_normal, ORIGIN - simplex[s0]));
-				
-				if (origin_distance < closest_line_distance) {
+				if (line_distance < closest_line_distance) {
 					closest_line_index = s0;
-					closest_line_distance = origin_distance;
+					closest_line_distance = line_distance;
 				}
 			}
 			
-			if (closest_line_distance <= TINY_NUMBER) {
-				printf("\nclosest_line_distance <= TINY_NUMBER\n\n");
-			}
-			
-			break;
-		}
-			
-			// get the outer normal of that line and get minkowski diffed corner in that direction
+			// get the outer normal of that line and get the minkowski diffed corner in that direction
+			v2 new_corner;
+			int s0 = closest_line_index;
+			int s1 = (s0+1) % simplex.size();
+			int s2 = (s0+2) % simplex.size();
+			v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s2]) * -1;
+			assert(!outer_normal.is_0());
+			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
 			// if the new corner is almost identical to one of the points that made the simplex line,
+			if (new_corner.distance(simplex[s0]) <= TINY_NUMBER
+				|| new_corner.distance(simplex[s1]) <= TINY_NUMBER) {
 				// find the point on the line that is closest to the origin
-				// the difference between the origin and that point is the overlap amount.
+				TODO
+				
+				// the difference between the origin and that point is the overlap amount. break.
+				TODO
+			}
+			
 			// else add the new corner to the simplex, turning the existing line into two.
-		// (back to beginning of loop)
+			simplex.insert(simplex.begin()+s1, new_corner);
+		}
 		
-		
-		return v2(0, 0);
+		return v2(NAN, NAN);
 	}
 }
 
