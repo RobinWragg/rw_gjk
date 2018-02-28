@@ -47,17 +47,17 @@ int main() {
 	
 	Shape shape;
 	
-	printf("\nis_convex_and_ordered():\n");
+	printf("\nis_convex():\n");
 	{
 		print_test_name("Valid test A");
 		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1) };
-		print_test_result(is_convex_and_ordered(corners));
+		print_test_result(is_convex(corners));
 	}
 	
 	{
 		print_test_name("Valid test B");
 		vector<v2> corners = { v2(1, 1), v2(0, 0), v2(0, 1) };
-		print_test_result(is_convex_and_ordered(corners));
+		print_test_result(is_convex(corners));
 	}
 	
 	{
@@ -67,7 +67,7 @@ int main() {
 			v2(-0.48871174908274423, 0.034026436793289747),
 			v2(-0.078922328003752942, -0.41132716476704667)
 		};
-	  print_test_result(is_convex_and_ordered(corners));
+	  print_test_result(is_convex(corners));
 	}
 	
 	{
@@ -77,7 +77,7 @@ int main() {
 			v2(-0.078922328003752942, -0.41132716476704667),
 			v2(0.38129108817537805, 0.0073923092139486363)
 		};
-	  print_test_result(is_convex_and_ordered(corners));
+	  print_test_result(is_convex(corners));
 	}
 	
 	{
@@ -87,13 +87,13 @@ int main() {
 			v2(-0.48871174908274423, 0.034026436793289747),
 			v2(0.38129108817537805, 0.0073923092139486363)
 		};
-	  print_test_result(is_convex_and_ordered(corners));
+	  print_test_result(is_convex(corners));
 	}
 	
 	{
 		print_test_name("Valid test F");
 		vector<v2> corners = { v2(0, 0), v2(1, 1), v2(0, 1) };
-		print_test_result(is_convex_and_ordered(corners));
+		print_test_result(is_convex(corners));
 	}
 	
 	{
@@ -104,31 +104,44 @@ int main() {
 		  v2(-0.2182808, -0.000000000000000019792794399625128),
 		  v2(-0.000000000000000030073149341473899, 0.2182808)
 		};
-		print_test_result(is_convex_and_ordered(corners));
+		print_test_result(is_convex(corners));
+	}
+	
+	{
+		print_test_name("Valid test H");
+		vector<v2> corners = {
+			v2(0.32557760000000002, 0.0000000000000000092518585385429707),
+			v2(0.16278880000000004, -0.28195847250316841),
+			v2(-0.16278879999999993, -0.28195847250316847),
+			v2(-0.32557759999999991, -0.000000000000000074014868308343765),
+			v2(-0.16278880000000007, 0.28195847250316836),
+			v2(0.16278879999999987, 0.28195847250316852)
+		};
+		print_test_result(is_convex(corners));
 	}
 	
 	{
 		print_test_name("Invalid test A - points are in-line");
 		vector<v2> corners = { v2(2, 0), v2(1, 1), v2(2, 1), v2(3, 1) };
-		print_test_result(!is_convex_and_ordered(corners));
+		print_test_result(!is_convex(corners));
 	}
 	
 	{
 		print_test_name("Invalid test B - points are in-line");
 		vector<v2> corners = { v2(3, 1), v2(2, 0), v2(1, 1), v2(2, 1) };
-		print_test_result(!is_convex_and_ordered(corners));
+		print_test_result(!is_convex(corners));
 	}
 	
 	{
 		print_test_name("Invalid test C - points are in-line");
 		vector<v2> corners = { v2(2, 1), v2(3, 1), v2(2, 0), v2(1, 1) };
-		print_test_result(!is_convex_and_ordered(corners));
+		print_test_result(!is_convex(corners));
 	}
 	
 	{
 		print_test_name("Invalid test D - points are in-line");
 		vector<v2> corners = { v2(-1, 0), v2(-1, 1), v2(1, 0), v2(-1, -1) };
-		print_test_result(!is_convex_and_ordered(corners));
+		print_test_result(!is_convex(corners));
 	}
 	
 	printf("\ntry_make_polygon():\n");

@@ -84,8 +84,7 @@ namespace rw_gjk {
 				v2 corner_direction = (corner - convex_corners.back()).normalised_or_0();
 				double corner_dot = dot(search_dir, corner_direction);
 				
-				// the check for 'corner_dot < 1' here prevents in-line points being added.
-				if (corner_dot >= 0 && corner_dot < 1 && corner_dot > highest_corner_dot) {
+				if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
 					highest_corner_dot = corner_dot;
 					best_corner = corner;
 				}
@@ -111,42 +110,29 @@ namespace rw_gjk {
 		return convex_corners;
 	}
 	
-	bool is_convex_and_ordered(vector<v2> corners) {
-		if (corners.size() < 3) return true;
+	bool is_convex(vector<v2> corners) {
+		assert(corners.size() > 2);
 		
-		auto ordered_corners = get_ordered_convex_corners(corners);
-		if (ordered_corners.size() != corners.size()) return false;
-		
-		int start_index = 0;
-		while (corners[start_index] != ordered_corners[0]) start_index++;
-		
-		bool first_winding_failed = false;
-		
-		for (int i = 0; i < ordered_corners.size(); i++) {
-			int corner_index = (start_index+i) % corners.size();
-			if (corners[corner_index] != ordered_corners[i]) {
-				first_winding_failed = true;
-				break;
-			}
-		}
-		
-		if (first_winding_failed) {
-			for (int i = 0; i < ordered_corners.size(); i++) {
-				int corner_index = (start_index-i) % corners.size();
-				if (corners[corner_index] != ordered_corners[i]) {
-					first_winding_failed = true;
-					break;
+		// detect in-line points
+		for (int c0 = 0; c0 < corners.size(); c0++) {
+			for (int c1 = 0; c1 < corners.size(); c1++) {
+				if (c1 == c0) continue;
+				for (int c2 = 0; c2 < corners.size(); c2++) {
+					if (c2 == c0) continue;
+					if (c2 == c1) continue;
+					
+					v2 a = (corners[c1] - corners[c0]).normalised_or_0();
+					v2 b = (corners[c2] - corners[c1]).normalised_or_0();
+					
+					if (dot(a, b) == 1) {
+						return false;
+					}
 				}
 			}
 		}
 		
-		return true;
-	}
-	
-	bool is_valid(vector<v2> corners) {
-		bool dup = contains_duplicates(corners);
-		bool conv_ordered = is_convex_and_ordered(corners);
-		return (!dup) && conv_ordered;
+		auto convex_corners = get_ordered_convex_corners(corners);
+		return corners.size() == convex_corners.size();
 	}
 	
 	void make_circle(double radius, Shape *shape_out) {
@@ -167,16 +153,8 @@ namespace rw_gjk {
 		
 		Shape shape;
 		
-		// check that the corners are convex and also order them
-		{
-			auto ordered_convex_corners = get_ordered_convex_corners(corners);
-			assert(is_valid(ordered_convex_corners));
-			
-			if (corners.size() != ordered_convex_corners.size()) {
-				return false;
-			} else {
-				shape.corners = ordered_convex_corners;
-			}
+		if (!is_convex(corners)) {
+			return false;
 		}
 		
 		// set radius
@@ -186,6 +164,7 @@ namespace rw_gjk {
 		
 		if (shape_out) {
 			*shape_out = shape;
+			shape_out->corners = corners;
 			shape_out->pos = ORIGIN;
 			shape_out->angle = 0;
 			shape_out->is_circle = false;
@@ -314,7 +293,7 @@ namespace rw_gjk {
 				simplex = {simplex[2], simplex[0]};
 				return improve_2_simplex(simplex, search_dir);
 			} else {
-				assert(is_valid(simplex));
+				assert(!contains_duplicates(simplex));
 				return true; // the origin is inside the simplex.
 			}
 		}
