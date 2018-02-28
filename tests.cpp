@@ -96,6 +96,41 @@ int main() {
 		print_test_result(is_convex_and_ordered(corners));
 	}
 	
+	{
+		print_test_name("Valid test G");
+		vector<v2> corners = {
+			v2(0.2182808, 0.0000000000000000069388939039072284),
+		  v2(0.000000000000000023390227265590813, -0.2182808),
+		  v2(-0.2182808, -0.000000000000000019792794399625128),
+		  v2(-0.000000000000000030073149341473899, 0.2182808)
+		};
+		print_test_result(is_convex_and_ordered(corners));
+	}
+	
+	{
+		print_test_name("Invalid test A - points are in-line");
+		vector<v2> corners = { v2(2, 0), v2(1, 1), v2(2, 1), v2(3, 1) };
+		print_test_result(!is_convex_and_ordered(corners));
+	}
+	
+	{
+		print_test_name("Invalid test B - points are in-line");
+		vector<v2> corners = { v2(3, 1), v2(2, 0), v2(1, 1), v2(2, 1) };
+		print_test_result(!is_convex_and_ordered(corners));
+	}
+	
+	{
+		print_test_name("Invalid test C - points are in-line");
+		vector<v2> corners = { v2(2, 1), v2(3, 1), v2(2, 0), v2(1, 1) };
+		print_test_result(!is_convex_and_ordered(corners));
+	}
+	
+	{
+		print_test_name("Invalid test D - points are in-line");
+		vector<v2> corners = { v2(-1, 0), v2(-1, 1), v2(1, 0), v2(-1, -1) };
+		print_test_result(!is_convex_and_ordered(corners));
+	}
+	
 	printf("\ntry_make_polygon():\n");
 	{
 		print_test_name("Valid polygon with clockwise winding");
@@ -111,7 +146,7 @@ int main() {
 	
 	{
 		print_test_name("Null pointer argument");
-		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1), v2(0.1, 0.9) };
+		vector<v2> corners = { v2(0, 0), v2(1, 0), v2(1, 1) };
 		print_test_result(!try_make_polygon(corners, nullptr));
 	}
 	

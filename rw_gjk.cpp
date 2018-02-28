@@ -1,9 +1,18 @@
 /*
 rw_gjk
 
-A 2D collision detection and resolution library.
+A detection and resolution library for 2D shapes.
 Based on the Gilbert–Johnson–Keerthi distance algorithm (GJK).
 Written by Robin Wragg.
+
+Many GJK libraries and most popular GJK tutorials assume that a line is infinitely thin, i.e. points
+that fall directly on the line are not handled correctly. This fails robustness tests because GJK
+requires a lot of testing of whether a point is on one side of a line or the other. rw_gjk avoids
+this issue by treating lines as thin strips that have area, and points that land in those areas are
+explicitly handled. In the case of the origin on a simplex line, this is treated as the origin being
+inside the simplex. This adds negligible running cost for the vast majority of situations, and the
+accuracy of overlap detection/resolution is not affected because the line thickness is intelligently
+set based on a combination of the size of the shapes being tested and IEEE float error margins.
 
 See end of file for license.
 */
@@ -51,12 +60,17 @@ namespace rw_gjk {
 		assert(!contains_duplicates(corners));
 		vector<v2> convex_corners;
 		
-		// add the leftmost corner
-		v2 leftmost_corner = corners.front();
-		for (auto &corner: corners) {
-			if (corner.x < leftmost_corner.x) leftmost_corner = corner;
+		// add the leftmost corner. If two corners are equally leftmost, choose the upper one.
+		{
+			v2 leftmost_corner = corners.front();
+			for (auto &corner: corners) {
+				if (corner.x < leftmost_corner.x
+					|| (corner.x == leftmost_corner.x && corner.y > leftmost_corner.y)) {
+					leftmost_corner = corner;
+				}
+			}
+			convex_corners.push_back(leftmost_corner);
 		}
-		convex_corners.push_back(leftmost_corner);
 		
 		// build a convex shape out of the corners, in any order.
 		v2 search_dir = v2(0, 1);
@@ -67,10 +81,11 @@ namespace rw_gjk {
 			for (auto &corner: corners) {
 				if (corner == convex_corners.back()) continue;
 				
-				v2 corner_difference = corner - convex_corners.back();
-				double corner_dot = dot(search_dir, corner_difference.normalised_or_0());
+				v2 corner_direction = (corner - convex_corners.back()).normalised_or_0();
+				double corner_dot = dot(search_dir, corner_direction);
 				
-				if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
+				// the check for 'corner_dot < 1' here prevents in-line points being added.
+				if (corner_dot >= 0 && corner_dot < 1 && corner_dot > highest_corner_dot) {
 					highest_corner_dot = corner_dot;
 					best_corner = corner;
 				}
@@ -87,7 +102,7 @@ namespace rw_gjk {
 				}
 			} else {
 				// no valid corner was found in the current search direction, so rotate it 90 degrees
-				search_dir = search_dir.right_normal_or_0();
+				search_dir = search_dir.rotated(M_PI*0.25);
 			}
 		}
 		
@@ -131,10 +146,6 @@ namespace rw_gjk {
 	bool is_valid(vector<v2> corners) {
 		bool dup = contains_duplicates(corners);
 		bool conv_ordered = is_convex_and_ordered(corners);
-		
-		assert(!dup);
-		assert(conv_ordered);
-		
 		return (!dup) && conv_ordered;
 	}
 	
@@ -173,12 +184,15 @@ namespace rw_gjk {
 			if (corner.length() > shape.radius) shape.radius = corner.length();
 		}
 		
-		*shape_out = shape;
-		shape_out->pos = ORIGIN;
-		shape_out->angle = 0;
-		shape_out->is_circle = false;
-		
-		return true;
+		if (shape_out) {
+			*shape_out = shape;
+			shape_out->pos = ORIGIN;
+			shape_out->angle = 0;
+			shape_out->is_circle = false;
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	v2 get_minkowski_diffed_corner(Shape *shape, Shape *other_shape, v2 direction) {
@@ -330,7 +344,7 @@ namespace rw_gjk {
 			
 			if (improve_simplex(simplex, search_direction)) {
 				if (simplex_out != nullptr) *simplex_out = simplex;
-				return true;	
+				return true;
 			}
 		}
 	}
@@ -354,11 +368,33 @@ namespace rw_gjk {
 			return pos_vector * TINY_NUMBER;
 		}
 		
-		return v2(0, 0); // NO-OP
-		
 		// NOTE NOTE NOTE NOTE: These comments don't take into account origins directly on lines.
 		// begin loop
+		while (true) {
 			// get simplex line closest to origin
+			double closest_line_distance = INFINITY;
+			int closest_line_index = -1;
+			for (int s0 = 0; s0 < simplex.size(); s0++) {
+				int s1 = (s0+1) % simplex.size();
+				v2 simplex_line_normal = (simplex[s1] - simplex[s0]).right_normal_or_0();
+				
+				// This should never be zero as it means two simplex points are identical.
+				assert(!simplex_line_normal.is_0());
+				
+				double origin_distance = fabs(dot(simplex_line_normal, ORIGIN - simplex[s0]));
+				
+				if (origin_distance < closest_line_distance) {
+					closest_line_index = s0;
+					closest_line_distance = origin_distance;
+				}
+			}
+			
+			if (closest_line_distance <= TINY_NUMBER) {
+				printf("\nclosest_line_distance <= TINY_NUMBER\n\n");
+			}
+			
+			break;
+		}
 			
 			// get the outer normal of that line and get minkowski diffed corner in that direction
 			
@@ -369,7 +405,7 @@ namespace rw_gjk {
 		// (back to beginning of loop)
 		
 		
-		
+		return v2(0, 0);
 	}
 }
 

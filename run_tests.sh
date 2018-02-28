@@ -1,1 +1,1 @@
-clear && echo Compiling... && g++ -std=c++11 tests.cpp -o tests && ./tests && rm tests
+clear && echo Compiling... && g++ -std=c++11 -g tests.cpp -o tests && ./tests
