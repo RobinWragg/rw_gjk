@@ -54,11 +54,31 @@ namespace rw_gjk {
 		return false;
 	}
 	
-	vector<v2> get_ordered_convex_corners(vector<v2> corners) {
-		assert(!contains_duplicates(corners));
-		vector<v2> convex_corners;
+	bool is_convex(vector<v2> corners) {
+		// return false if any three points are collinear, i.e. form a straight line.
+		for (int c0 = 0; c0 < corners.size(); c0++) {
+			for (int c1 = 0; c1 < corners.size(); c1++) {
+				if (c1 == c0) continue;
+				for (int c2 = 0; c2 < corners.size(); c2++) {
+					if (c2 == c0 || c2 == c1) continue;
+					
+					v2 a = (corners[c1] - corners[c0]).normalised_or_0();
+					v2 b = (corners[c2] - corners[c1]).normalised_or_0();
+					
+					if (dot(a, b) == 1) return false;
+				}
+			}
+		}
 		
-		// add the leftmost corner. If two corners are equally leftmost, choose the upper one.
+		/*
+		The rest of this function detects concavity by finding the convex hull of all corners using the
+		gift wrapping algorithm (https://en.wikipedia.org/wiki/Gift_wrapping_algorithm). If there are
+		more corners than those that constructed the convex hull, that means the remaining corners are
+		concave.
+		*/
+		vector<v2> convex_hull;
+		
+		// start with the leftmost corner. If two corners are equally leftmost, choose the upper one.
 		{
 			v2 leftmost_corner = corners.front();
 			for (auto &corner: corners) {
@@ -67,70 +87,47 @@ namespace rw_gjk {
 					leftmost_corner = corner;
 				}
 			}
-			convex_corners.push_back(leftmost_corner);
+			convex_hull.push_back(leftmost_corner);
 		}
 		
 		// build a convex shape out of the corners, in any order.
-		v2 search_dir = v2(0, 1);
+		v2 search_direction = v2(0, 1);
 		while (true) {
-			// find the next corner
-			double highest_corner_dot = -INFINITY;
-			v2 best_corner;
-			for (auto &corner: corners) {
-				if (corner == convex_corners.back()) continue;
-				
-				v2 corner_direction = (corner - convex_corners.back()).normalised_or_0();
-				double corner_dot = dot(search_dir, corner_direction);
-				
-				if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
-					highest_corner_dot = corner_dot;
-					best_corner = corner;
-				}
-			}
-			
-			// if a valid corner was found
-			if (highest_corner_dot >= 0) {
-				// check if it's the same as the first corner
-				if (best_corner == convex_corners[0]) break; // the convex shape is complete
-				else {
-					// add the corner to the shape and update the search direction
-					search_dir = (best_corner - convex_corners.back()).normalised_or_0();
-					convex_corners.push_back(best_corner);
-				}
-			} else {
-				// no valid corner was found in the current search direction, so rotate it 90 degrees
-				search_dir = search_dir.rotated(M_PI*0.25);
-			}
-		}
-		
-		assert(convex_corners.size() <= corners.size());
-		assert(!contains_duplicates(convex_corners));
-		return convex_corners;
-	}
-	
-	bool is_convex(vector<v2> corners) {
-		assert(corners.size() > 2);
-		
-		// detect in-line points
-		for (int c0 = 0; c0 < corners.size(); c0++) {
-			for (int c1 = 0; c1 < corners.size(); c1++) {
-				if (c1 == c0) continue;
-				for (int c2 = 0; c2 < corners.size(); c2++) {
-					if (c2 == c0) continue;
-					if (c2 == c1) continue;
+			// find the corner that is closest to parallel with the search direction.
+			int next_corner_index = -1;
+			{
+				double highest_corner_dot = -INFINITY;
+				for (int c = 0; c < corners.size(); c++) {
+					if (corners[c] == convex_hull.back()) continue;
 					
-					v2 a = (corners[c1] - corners[c0]).normalised_or_0();
-					v2 b = (corners[c2] - corners[c1]).normalised_or_0();
+					v2 corner_direction = (corners[c] - convex_hull.back()).normalised_or_0();
+					double corner_dot = dot(search_direction, corner_direction);
 					
-					if (dot(a, b) == 1) {
-						return false;
+					if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
+						highest_corner_dot = corner_dot;
+						next_corner_index = c;
 					}
 				}
 			}
+			
+			// if a valid corner was found,
+			if (next_corner_index >= 0) {
+				v2 next_corner = corners[next_corner_index];
+				
+				// check if it's the same as the first corner.
+				if (next_corner == convex_hull[0]) break; // the hull is complete.
+				else {
+					// add the corner to the shape and update the search direction
+					search_direction = (next_corner - convex_hull.back()).normalised_or_0();
+					convex_hull.push_back(next_corner);
+				}
+			} else {
+				// no valid corner was found in the current search direction, so rotate it 45 degrees clockwise.
+				search_direction = search_direction.rotated(M_PI*0.25);
+			}
 		}
 		
-		auto convex_corners = get_ordered_convex_corners(corners);
-		return corners.size() == convex_corners.size();
+		return corners.size() == convex_hull.size();
 	}
 	
 	void make_circle(double radius, Shape *shape_out) {
