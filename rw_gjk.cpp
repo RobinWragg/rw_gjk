@@ -327,23 +327,21 @@ namespace rw_gjk {
 			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
-			
-			
-			
-			
 			// if the new corner is almost identical to one of the points that made the simplex,
 			// break and handle it outside of the loop.
-			bool found_match = false;
-			for (auto &simplex_corner : simplex) {
-				if (simplex_corner.distance(new_corner) <= CORNER_SIMILARITY_TOLERANCE) {
-					found_match = true;
+			{
+				bool found_match = false;
+				for (auto &simplex_corner : simplex) {
+					if (simplex_corner.distance(new_corner) <= CORNER_SIMILARITY_TOLERANCE) {
+						found_match = true;
+						break;
+					}
+				}
+				
+				if (found_match) {
+					overlap_line_index = s0;
 					break;
 				}
-			}
-			
-			if (found_match) {
-				overlap_line_index = s0;
-				break;
 			}
 			
 			// else add the new corner to the simplex, turning the existing line into two.
