@@ -18,11 +18,9 @@ See end of file for license.
 */
 
 // TODO: check for NaN?
-// TODO: remove occurrences of while (true).
 // TODO: remove asserts and handle those states in a graceful way.
-// TODO: add caching of rotations.
-// TODO: add error strings.
 // TODO: calculate TINY_NUMBER appropriately. It has something to do with adding largest_radius in shapes_are_overlapping(). TINY_NUMBER is basically used as half the thickness of a line. It should be very small but never small enough to cause IEEE-float-related problems.
+// TODO: get_minkowski_diffed_corner() can return in-line corners. Investigate.
 
 #include <vector>
 #include <cmath>
@@ -157,14 +155,13 @@ namespace rw_gjk {
 			return false;
 		}
 		
-		// set radius
-		for (auto &corner: shape.corners) {
-			if (corner.length() > shape.radius) shape.radius = corner.length();
-		}
-		
 		if (shape_out) {
 			*shape_out = shape;
 			shape_out->corners = corners;
+			// set radius
+			for (auto &corner: shape.corners) {
+				if (corner.length() > shape.radius) shape.radius = corner.length();
+			}
 			shape_out->pos = ORIGIN;
 			shape_out->angle = 0;
 			shape_out->is_circle = false;
@@ -307,9 +304,12 @@ namespace rw_gjk {
 		vector<v2> *simplex_out = nullptr // This is only used internally.
 		) {
 		
-		v2 search_direction = v2(1, 0); // this can be anything except zero, I think? TODO
-		vector<v2> simplex = {get_minkowski_diffed_corner(shape_a, shape_b, search_direction)};
+		// setting the initial direction like this maximises the
+		// chance of the simplex covering the origin early.
+		v2 search_direction = (shape_b->pos - shape_a->pos).right_normal_or_0();
+		if (search_direction.is_0()) search_direction = v2(1, 0);
 		
+		vector<v2> simplex = { get_minkowski_diffed_corner(shape_a, shape_b, search_direction) };
 		search_direction = ORIGIN - simplex[0]; // search toward the origin
 		
 		while (true) {
@@ -347,7 +347,8 @@ namespace rw_gjk {
 			return pos_vector * TINY_NUMBER;
 		}
 		
-		// NOTE NOTE NOTE NOTE: These comments don't take into account origins directly on lines.
+		int overlap_line_index = -1;
+		
 		while (true) {
 			// get simplex line closest to origin
 			double closest_line_distance = INFINITY;
@@ -368,26 +369,37 @@ namespace rw_gjk {
 			v2 new_corner;
 			int s0 = closest_line_index;
 			int s1 = (s0+1) % simplex.size();
-			int s2 = (s0+2) % simplex.size();
-			v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s2]) * -1;
+			v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - ORIGIN);
 			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
 			// if the new corner is almost identical to one of the points that made the simplex line,
+			// break and handle it outside of the loop.
 			if (new_corner.distance(simplex[s0]) <= TINY_NUMBER
 				|| new_corner.distance(simplex[s1]) <= TINY_NUMBER) {
-				// find the point on the line that is closest to the origin
-				TODO
-				
-				// the difference between the origin and that point is the overlap amount. break.
-				TODO
+				overlap_line_index = s0;
+				break;
 			}
 			
 			// else add the new corner to the simplex, turning the existing line into two.
 			simplex.insert(simplex.begin()+s1, new_corner);
 		}
 		
-		return v2(NAN, NAN);
+		assert(overlap_line_index >= 0);
+		
+		// find the point on the line that is closest to the origin
+		v2 overlap_line = simplex[overlap_line_index+1] - simplex[overlap_line_index];
+		v2 overlap_line_unit = overlap_line.normalised_or_0();
+		double len = dot(overlap_line_unit, ORIGIN - simplex[overlap_line_index]);
+		assert(len >= 0);
+		assert(len <= overlap_line.length());
+		
+		v2 point_of_overlap = simplex[overlap_line_index] + overlap_line_unit * len;
+		
+		// the difference between the origin and that point is the overlap amount.
+		v2 overlap_vector = point_of_overlap - ORIGIN;
+		v2 overlap_direction_unit = overlap_vector.normalised_or_0();
+		return overlap_direction_unit * (overlap_vector.length() + TINY_NUMBER);
 	}
 }
 
