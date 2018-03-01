@@ -55,6 +55,8 @@ namespace rw_gjk {
 	}
 	
 	bool is_convex(vector<v2> corners) {
+		assert(corners.size() > 2);
+		
 		// return false if any three points are collinear, i.e. form a straight line.
 		for (int c0 = 0; c0 < corners.size(); c0++) {
 			for (int c1 = 0; c1 < corners.size(); c1++) {
@@ -103,27 +105,19 @@ namespace rw_gjk {
 					v2 corner_direction = (corners[c] - convex_hull.back()).normalised_or_0();
 					double corner_dot = dot(search_direction, corner_direction);
 					
-					if (corner_dot >= 0 && corner_dot > highest_corner_dot) {
+					if (corner_dot > highest_corner_dot) {
 						highest_corner_dot = corner_dot;
 						next_corner_index = c;
 					}
 				}
 			}
 			
-			// if a valid corner was found,
-			if (next_corner_index >= 0) {
-				v2 next_corner = corners[next_corner_index];
-				
-				// check if it's the same as the first corner.
-				if (next_corner == convex_hull[0]) break; // the hull is complete.
-				else {
-					// add the corner to the shape and update the search direction
-					search_direction = (next_corner - convex_hull.back()).normalised_or_0();
-					convex_hull.push_back(next_corner);
-				}
-			} else {
-				// no valid corner was found in the current search direction, so rotate it 45 degrees clockwise.
-				search_direction = search_direction.rotated(M_PI*0.25);
+			// check if the new corner is the same as the first corner.
+			if (corners[next_corner_index] == convex_hull[0]) break; // the hull is complete.
+			else {
+				// add the corner to the shape and update the search direction
+				search_direction = (corners[next_corner_index] - convex_hull.back()).normalised_or_0();
+				convex_hull.push_back(corners[next_corner_index]);
 			}
 		}
 		
