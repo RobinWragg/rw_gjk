@@ -393,6 +393,28 @@ int main() {
 		}
 		
 		{
+			print_test_name("Identical rotated polygons overlap");
+			vector<v2> corners = {
+				v2(-0.10000000000000001, -0.10000000000000001),
+			  v2(0.10000000000000001, -0.10000000000000001),
+			  v2(0.10000000000000001, 0.10000000000000001),
+			  v2(-0.10000000000000001, 0.10000000000000001)
+			};
+			
+			Shape a, b;
+			bool success = try_make_polygon(corners, &a);
+			a.angle = 0.899999976;
+			a.pos = v2(0.037172812997691616, 0.049185297820002166);
+			
+			success = success && try_make_polygon(corners, &b);
+			b.angle = 0.899999976;
+			b.pos = v2(0.084543391574009308, -0.0087723996977551837);
+			
+			v2 amount = get_overlap_amount(&a, &b);
+			print_test_result(amount.x != 0 || amount.y != 0);
+		}
+		
+		{
 			print_test_name("Polygons don't overlap");
 			shape_a.pos = v2(-10, 3);
 			shape_b.pos = v2(10, 3);

@@ -32,7 +32,7 @@ namespace rw_gjk {
 	
 	using namespace std;
 	
-	const double TINY_NUMBER = 0.0000001;
+	const double LINE_THICKNESS = 0.0000001;
 	v2 ORIGIN = v2(0, 0);
 	
 	struct Shape {
@@ -170,8 +170,6 @@ namespace rw_gjk {
 				v2 best_rotated_corner;
 				double best_dot = -INFINITY;
 				
-				// TODO: Build a rotation matrix at this point and use it in the for-loop below.
-				
 				for (const auto &corner: shape->corners) {
 					v2 rotated_corner = corner.rotated(shape->angle);
 					double new_dot = dot(rotated_corner, corner_direction);
@@ -188,6 +186,7 @@ namespace rw_gjk {
 		
 		v2 baked_corner = get_baked_corner_of_shape(shape, direction);
 		v2 other_baked_corner = get_baked_corner_of_shape(other_shape, -direction);
+		
 		return baked_corner - other_baked_corner;
 	}
 	
@@ -200,56 +199,27 @@ namespace rw_gjk {
 	}
 	
 	bool improve_2_simplex(vector<v2> &simplex, v2 &search_direction) {
-		assert(simplex.size() == 2);
-		
-		enum Origin_Location {
-			OL_ON_LINE,
-			OL_NEAR_LINE,
-			OL_NEAR_CORNER_0,
-			OL_NEAR_CORNER_1
-		};
-		
-		Origin_Location origin_location;
-		{
-			if (origin_is_between_points(simplex[0], simplex[1])) {
-				v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_0();
-				double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
-				
-				if (fabs(origin_distance_from_line) <= TINY_NUMBER) origin_location = OL_ON_LINE;
-				else origin_location = OL_NEAR_LINE;
-				
-			} else if (dot(simplex[1] - simplex[0], ORIGIN - simplex[0]) <= 0) {
-				origin_location = OL_NEAR_CORNER_0;
+		/*
+		Find which simplex component the origin is closest
+		to, or whether it is on the simplex line itself.
+		*/
+		if (origin_is_between_points(simplex[0], simplex[1])) {
+			v2 line_normal = (simplex[1] - simplex[0]).right_normal_or_0();
+			double origin_distance_from_line = dot(line_normal, ORIGIN - simplex[0]);
+			
+			if (fabs(origin_distance_from_line) <= LINE_THICKNESS) {
+				return true; // The simplex contains the origin.
 			} else {
-				assert(dot(simplex[0] - simplex[1], ORIGIN - simplex[1]) <= 0);
-				origin_location = OL_NEAR_CORNER_1;
-			}
-		}
-		
-		switch (origin_location) {
-			case OL_ON_LINE: {
-				return true; // the simplex contains the origin.
-				break;
-			}
-			case OL_NEAR_LINE: {
 				// The simplex is correct. Search on the side of the 2-simplex that contains the origin.
 				search_direction = (simplex[1] - simplex[0]).normal_in_direction_or_0(ORIGIN - simplex[0]);
-				break;
 			}
-			case OL_NEAR_CORNER_0: {
-				simplex = {simplex[0]};
-				search_direction = (ORIGIN - simplex[0]).normalised_or_0();
-				break;
-			}
-			case OL_NEAR_CORNER_1: {
-				simplex = {simplex[1]};
-				search_direction = (ORIGIN - simplex[1]).normalised_or_0();
-				break;
-			}
-			default: {
-				assert(false);
-				break;
-			}
+		} else if (dot(simplex[1] - simplex[0], ORIGIN - simplex[0]) <= 0) {
+			simplex = {simplex[0]}; // The origin is closest to point 0.
+			search_direction = (ORIGIN - simplex[0]).normalised_or_0();
+		} else {
+			assert(dot(simplex[0] - simplex[1], ORIGIN - simplex[1]) <= 0);
+			simplex = {simplex[1]}; // The origin is closest to point 1.
+			search_direction = (ORIGIN - simplex[1]).normalised_or_0();
 		}
 		
 		return false;
@@ -268,11 +238,11 @@ namespace rw_gjk {
 			v2 ca_normal_away_from_b = ca.normal_in_direction_or_0(bc);
 			
 			// find which side of the triangle the origin is on, or if it's inside it.
-			if (dot(ab_normal_away_from_c, ORIGIN - simplex[0]) >= 0) {
+			if (dot(ab_normal_away_from_c, ORIGIN - simplex[0]) > 0) {
 				simplex = {simplex[0], simplex[1]};
-			} else if (dot(bc_normal_away_from_a, ORIGIN - simplex[1]) >= 0) {
+			} else if (dot(bc_normal_away_from_a, ORIGIN - simplex[1]) > 0) {
 				simplex = {simplex[1], simplex[2]};
-			} else if (dot(ca_normal_away_from_b, ORIGIN - simplex[2]) >= 0) {
+			} else if (dot(ca_normal_away_from_b, ORIGIN - simplex[2]) > 0) {
 				simplex = {simplex[2], simplex[0]};
 			} else {
 				return true; // the origin is inside the simplex.
@@ -299,8 +269,7 @@ namespace rw_gjk {
 		while (true) {
 			simplex.push_back(get_minkowski_diffed_corner(shape_a, shape_b, search_direction));
 			
-			double dot_result = dot(simplex.back(), search_direction);
-			if (dot_result <= TINY_NUMBER) {
+			if (dot(simplex.back() - ORIGIN, search_direction) <= LINE_THICKNESS) {
 				return false;
 			}
 			
@@ -327,12 +296,14 @@ namespace rw_gjk {
 				pos_vector.x = 1;
 			}
 			
-			return pos_vector * TINY_NUMBER;
+			return pos_vector * LINE_THICKNESS;
 		}
 		
 		int overlap_line_index = -1;
 		
 		while (true) {
+			const double CORNER_SIMILARITY_TOLERANCE = LINE_THICKNESS;
+			
 			// get simplex line closest to origin
 			double closest_line_distance = INFINITY;
 			int closest_line_index = -1;
@@ -356,16 +327,28 @@ namespace rw_gjk {
 			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
-			// if the new corner is almost identical to one of the points that made the simplex line,
+			
+			
+			
+			
+			// if the new corner is almost identical to one of the points that made the simplex,
 			// break and handle it outside of the loop.
-			if (new_corner.distance(simplex[s0]) <= TINY_NUMBER
-				|| new_corner.distance(simplex[s1]) <= TINY_NUMBER) {
+			bool found_match = false;
+			for (auto &simplex_corner : simplex) {
+				if (simplex_corner.distance(new_corner) <= CORNER_SIMILARITY_TOLERANCE) {
+					found_match = true;
+					break;
+				}
+			}
+			
+			if (found_match) {
 				overlap_line_index = s0;
 				break;
 			}
 			
 			// else add the new corner to the simplex, turning the existing line into two.
 			simplex.insert(simplex.begin()+s1, new_corner);
+			assert(!contains_duplicates(simplex));
 		}
 		
 		assert(overlap_line_index >= 0);
@@ -374,15 +357,12 @@ namespace rw_gjk {
 		v2 overlap_line = simplex[overlap_line_index+1] - simplex[overlap_line_index];
 		v2 overlap_line_unit = overlap_line.normalised_or_0();
 		double len = dot(overlap_line_unit, ORIGIN - simplex[overlap_line_index]);
-		assert(len >= 0);
-		assert(len <= overlap_line.length());
-		
 		v2 point_of_overlap = simplex[overlap_line_index] + overlap_line_unit * len;
 		
 		// the difference between the origin and that point is the overlap amount.
 		v2 overlap_vector = point_of_overlap - ORIGIN;
 		v2 overlap_direction_unit = overlap_vector.normalised_or_0();
-		return overlap_direction_unit * (overlap_vector.length() + TINY_NUMBER);
+		return overlap_direction_unit * (overlap_vector.length() + LINE_THICKNESS);
 	}
 }
 
