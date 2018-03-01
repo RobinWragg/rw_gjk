@@ -199,15 +199,15 @@ namespace rw_gjk {
 		return (dot(ao, ab) >= 0) && (dot(bo, ba) >= 0);
 	}
 	
-	enum Origin_Location {
-		OL_ON_LINE,
-		OL_NEAR_LINE,
-		OL_NEAR_CORNER_0,
-		OL_NEAR_CORNER_1
-	};
-	
-	bool improve_2_simplex(vector<v2> &simplex, v2 &search_dir) {
+	bool improve_2_simplex(vector<v2> &simplex, v2 &search_direction) {
 		assert(simplex.size() == 2);
+		
+		enum Origin_Location {
+			OL_ON_LINE,
+			OL_NEAR_LINE,
+			OL_NEAR_CORNER_0,
+			OL_NEAR_CORNER_1
+		};
 		
 		Origin_Location origin_location;
 		{
@@ -228,24 +228,22 @@ namespace rw_gjk {
 		
 		switch (origin_location) {
 			case OL_ON_LINE: {
-				return true;
+				return true; // the simplex contains the origin.
 				break;
 			}
 			case OL_NEAR_LINE: {
 				// The simplex is correct. Search on the side of the 2-simplex that contains the origin.
-				v2 simplex_line = simplex[1] - simplex[0];
-				v2 direction_to_origin = ORIGIN - simplex[0];
-				search_dir = simplex_line.normal_in_direction_or_0(direction_to_origin);
+				search_direction = (simplex[1] - simplex[0]).normal_in_direction_or_0(ORIGIN - simplex[0]);
 				break;
 			}
 			case OL_NEAR_CORNER_0: {
 				simplex = {simplex[0]};
-				search_dir = (ORIGIN - simplex[0]).normalised_or_0();
+				search_direction = (ORIGIN - simplex[0]).normalised_or_0();
 				break;
 			}
 			case OL_NEAR_CORNER_1: {
 				simplex = {simplex[1]};
-				search_dir = (ORIGIN - simplex[1]).normalised_or_0();
+				search_direction = (ORIGIN - simplex[1]).normalised_or_0();
 				break;
 			}
 			default: {
@@ -254,12 +252,11 @@ namespace rw_gjk {
 			}
 		}
 		
-		assert(search_dir.length() > 0.9999 && search_dir.length() < 1.0001);
 		return false;
 	}
 	
 	// returns true when the simplex contains the origin.
-	bool improve_simplex(vector<v2> &simplex, v2 &search_dir) {
+	bool improve_simplex(vector<v2> &simplex, v2 &search_direction) {
 		if (simplex.size() == 3) {
 			// cache some basic vectors
 			v2 ab = simplex[1] - simplex[0];
@@ -283,7 +280,7 @@ namespace rw_gjk {
 		}
 		
 		assert(simplex.size() == 2);
-		return improve_2_simplex(simplex, search_dir);
+		return improve_2_simplex(simplex, search_direction);
 	}
 	
 	bool shapes_are_overlapping(
