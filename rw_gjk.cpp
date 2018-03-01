@@ -271,17 +271,13 @@ namespace rw_gjk {
 			v2 ca_normal_away_from_b = ca.normal_in_direction_or_0(bc);
 			
 			// find which side of the triangle the origin is on, or if it's inside it.
-			if (dot(ab_normal_away_from_c, ORIGIN - simplex[0]) > 0) {
+			if (dot(ab_normal_away_from_c, ORIGIN - simplex[0]) >= 0) {
 				simplex = {simplex[0], simplex[1]};
-				return improve_2_simplex(simplex, search_dir);
-			} else if (dot(bc_normal_away_from_a, ORIGIN - simplex[1]) > 0) {
+			} else if (dot(bc_normal_away_from_a, ORIGIN - simplex[1]) >= 0) {
 				simplex = {simplex[1], simplex[2]};
-				return improve_2_simplex(simplex, search_dir);
-			} else if (dot(ca_normal_away_from_b, ORIGIN - simplex[2]) > 0) {
+			} else if (dot(ca_normal_away_from_b, ORIGIN - simplex[2]) >= 0) {
 				simplex = {simplex[2], simplex[0]};
-				return improve_2_simplex(simplex, search_dir);
 			} else {
-				assert(!contains_duplicates(simplex));
 				return true; // the origin is inside the simplex.
 			}
 		}
@@ -304,7 +300,6 @@ namespace rw_gjk {
 		search_direction = ORIGIN - simplex[0]; // search toward the origin
 		
 		while (true) {
-			assert(simplex.size() < 3);
 			simplex.push_back(get_minkowski_diffed_corner(shape_a, shape_b, search_direction));
 			
 			double dot_result = dot(simplex.back(), search_direction);
