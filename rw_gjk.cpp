@@ -269,9 +269,7 @@ namespace rw_gjk {
 		while (true) {
 			simplex.push_back(get_minkowski_diffed_corner(shape_a, shape_b, search_direction));
 			
-			if (dot(simplex.back() - ORIGIN, search_direction) <= LINE_THICKNESS) {
-				return false;
-			}
+			if (dot(simplex.back(), search_direction) <= LINE_THICKNESS) return false;
 			
 			if (improve_simplex(simplex, search_direction)) {
 				if (simplex_out != nullptr) *simplex_out = simplex;
@@ -352,7 +350,8 @@ namespace rw_gjk {
 		assert(overlap_line_index >= 0);
 		
 		// find the point on the line that is closest to the origin
-		v2 overlap_line = simplex[overlap_line_index+1] - simplex[overlap_line_index];
+		int overlap_line_end_index = (overlap_line_index+1) % simplex.size();
+		v2 overlap_line = simplex[overlap_line_end_index] - simplex[overlap_line_index];
 		v2 overlap_line_unit = overlap_line.normalised_or_0();
 		double len = dot(overlap_line_unit, ORIGIN - simplex[overlap_line_index]);
 		v2 point_of_overlap = simplex[overlap_line_index] + overlap_line_unit * len;
