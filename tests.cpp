@@ -121,25 +121,25 @@ int main() {
 	}
 	
 	{
-		print_test_name("Invalid polygon A - points are in-line");
+		print_test_name("Invalid polygon A - colinearity");
 		vector<v2> corners = { v2(2, 0), v2(1, 1), v2(2, 1), v2(3, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid polygon B - points are in-line");
+		print_test_name("Invalid polygon B - colinearity");
 		vector<v2> corners = { v2(3, 1), v2(2, 0), v2(1, 1), v2(2, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid polygon C - points are in-line");
+		print_test_name("Invalid polygon C - colinearity");
 		vector<v2> corners = { v2(2, 1), v2(3, 1), v2(2, 0), v2(1, 1) };
 		print_test_result(!is_convex(corners));
 	}
 	
 	{
-		print_test_name("Invalid polygon D - points are in-line");
+		print_test_name("Invalid polygon D - colinearity");
 		vector<v2> corners = { v2(-1, 0), v2(-1, 1), v2(1, 0), v2(-1, -1) };
 		print_test_result(!is_convex(corners));
 	}
@@ -449,7 +449,7 @@ int main() {
 			print_test_name("Brute force test");
 			bool success = true;
 			
-			for (int outer = 0; outer < 100; outer++) {
+			for (int outer = 0; outer < 30; outer++) {
 				Shape shapes[4];
 				
 				success = success && try_make_polygon({
@@ -466,7 +466,7 @@ int main() {
 				make_circle(randf()*3, &shapes[2]);
 				make_circle(randf()*3, &shapes[3]);
 				
-				for (int inner = 0; inner < 100; inner++) {
+				for (int inner = 0; inner < 30; inner++) {
 					for (int s = 0; s < 4; s++) {
 						shapes[s].pos.x = (randf() - 0.5) * 10;
 						shapes[s].pos.y = (randf() - 0.5) * 10;

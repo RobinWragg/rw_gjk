@@ -259,7 +259,7 @@ namespace rw_gjk {
 		) {
 		
 		// setting the initial direction like this maximises the
-		// chance of the simplex covering the origin early.
+		// chance of the simplex covering the origin early. TODO: does it actually tho?
 		v2 search_direction = (shape_b->pos - shape_a->pos).right_normal_or_0();
 		if (search_direction.is_0()) search_direction = v2(1, 0);
 		
@@ -284,23 +284,19 @@ namespace rw_gjk {
 		vector<v2> simplex;
 		
 		if (!shapes_are_overlapping(shape_a, shape_b, &simplex)) {
-			return v2(0, 0);
+			return v2(0, 0); // no overlap, therefore no overlap amount.
 		}
 		
 		if (simplex.size() < 3) {
 			v2 pos_vector = (shape_b->pos - shape_a->pos).normalised_or_0();
-			
-			if (pos_vector.is_0()) {
-				pos_vector.x = 1;
-			}
-			
+			if (pos_vector.is_0()) pos_vector.x = 1;
 			return pos_vector * LINE_THICKNESS;
 		}
 		
 		int overlap_line_index = -1;
 		
 		while (true) {
-			const double CORNER_SIMILARITY_TOLERANCE = LINE_THICKNESS;
+			const double CORNER_SIMILARITY_TOLERANCE = LINE_THICKNESS; // TODO: better way to set this?
 			
 			// get simplex line closest to origin
 			double closest_line_distance = INFINITY;
