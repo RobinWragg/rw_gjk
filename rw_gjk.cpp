@@ -293,14 +293,12 @@ namespace rw_gjk {
 			return pos_vector * LINE_THICKNESS;
 		}
 		
-		int overlap_line_index = -1;
-		
 		while (true) {
 			const double CORNER_SIMILARITY_TOLERANCE = LINE_THICKNESS; // TODO: better way to set this?
 			
-			// get simplex line closest to origin
+			// get simplex line closest to origin.
 			double closest_line_distance = INFINITY;
-			int closest_line_index = -1;
+			int line_start_index = -1;
 			for (int s0 = 0; s0 < simplex.size(); s0++) {
 				int s1 = (s0+1) % simplex.size();
 				v2 simplex_line_normal = (simplex[s1] - simplex[s0]).right_normal_or_0();
@@ -308,54 +306,39 @@ namespace rw_gjk {
 				double line_distance = fabs(dot(simplex_line_normal, ORIGIN - simplex[s0]));
 				
 				if (line_distance < closest_line_distance) {
-					closest_line_index = s0;
+					line_start_index = s0;
 					closest_line_distance = line_distance;
 				}
 			}
 			
-			// get the outer normal of that line and get the minkowski diffed corner in that direction
+			// get the outer normal of that line and get the minkowski diffed corner in that direction.
 			v2 new_corner;
-			int s0 = closest_line_index;
-			int s1 = (s0+1) % simplex.size();
-			v2 outer_normal = (simplex[s1] - simplex[s0]).normal_in_direction_or_0(simplex[s0] - ORIGIN);
+			int line_end_index = (line_start_index+1) % simplex.size();
+			v2 outer_normal = (simplex[line_end_index] - simplex[line_start_index]).normal_in_direction_or_0(simplex[line_start_index] - ORIGIN);
 			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
-			// if the new corner is almost identical to one of the points that made the simplex,
-			// break and handle it outside of the loop.
-			{
-				bool found_match = false;
-				for (auto &simplex_corner : simplex) {
-					if (simplex_corner.distance(new_corner) <= CORNER_SIMILARITY_TOLERANCE) {
-						found_match = true;
-						break;
-					}
-				}
-				
-				if (found_match) {
-					overlap_line_index = s0;
-					break;
+			// check if the new corner is almost identical to one of the points that made the simplex.
+			for (auto &simplex_corner : simplex) {
+				if (simplex_corner.distance(new_corner) <= CORNER_SIMILARITY_TOLERANCE) {
+					// the new corner is almost identical to an existing one, so we've finished expanding the simplex.
+					
+					// find the point on the line that is closest to the origin.
+					v2 simplex_line = simplex[line_end_index] - simplex[line_start_index];
+					v2 simplex_line_unit = simplex_line.normalised_or_0();
+					double len = dot(simplex_line_unit, ORIGIN - simplex[line_start_index]);
+					v2 point_of_overlap = simplex[line_start_index] + simplex_line_unit * len;
+					
+					// the difference between the origin and that point is the overlap amount.
+					v2 overlap_vector = point_of_overlap - ORIGIN;
+					return overlap_vector.normalised_or_0() * (overlap_vector.length() + LINE_THICKNESS);
 				}
 			}
 			
 			// else add the new corner to the simplex, turning the existing line into two.
-			simplex.insert(simplex.begin()+s1, new_corner);
+			simplex.insert(simplex.begin()+line_end_index, new_corner);
 			assert(!contains_duplicates(simplex));
-		}
-		
-		assert(overlap_line_index >= 0);
-		
-		// find the point on the line that is closest to the origin
-		int overlap_line_end_index = (overlap_line_index+1) % simplex.size();
-		v2 overlap_line = simplex[overlap_line_end_index] - simplex[overlap_line_index];
-		v2 overlap_line_unit = overlap_line.normalised_or_0();
-		double len = dot(overlap_line_unit, ORIGIN - simplex[overlap_line_index]);
-		v2 point_of_overlap = simplex[overlap_line_index] + overlap_line_unit * len;
-		
-		// the difference between the origin and that point is the overlap amount.
-		v2 overlap_vector = point_of_overlap - ORIGIN;
-		v2 overlap_direction_unit = overlap_vector.normalised_or_0();
-		return overlap_direction_unit * (overlap_vector.length() + LINE_THICKNESS);
+		} // end while
 	}
 }
 
