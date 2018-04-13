@@ -314,7 +314,8 @@ namespace rw_gjk {
 			// get the outer normal of that line and get the minkowski diffed corner in that direction.
 			v2 new_corner;
 			int line_end_index = (line_start_index+1) % simplex.size();
-			v2 outer_normal = (simplex[line_end_index] - simplex[line_start_index]).normal_in_direction_or_0(simplex[line_start_index] - ORIGIN);
+			v2 simplex_line = simplex[line_end_index] - simplex[line_start_index];
+			v2 outer_normal = simplex_line.normal_in_direction_or_0(simplex[line_start_index] - ORIGIN);
 			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
@@ -324,7 +325,6 @@ namespace rw_gjk {
 					// the new corner is almost identical to an existing one, so we've finished expanding the simplex.
 					
 					// find the point on the line that is closest to the origin.
-					v2 simplex_line = simplex[line_end_index] - simplex[line_start_index];
 					v2 simplex_line_unit = simplex_line.normalised_or_0();
 					double len = dot(simplex_line_unit, ORIGIN - simplex[line_start_index]);
 					v2 point_of_overlap = simplex[line_start_index] + simplex_line_unit * len;
