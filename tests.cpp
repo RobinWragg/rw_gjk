@@ -49,6 +49,18 @@ int main() {
 	
 	printf("\nis_convex():\n");
 	{
+		print_test_name("Point");
+		vector<v2> corners = { v2(0.136, 0.3469) };
+		print_test_result(is_convex(corners));
+	}
+	
+	{
+		print_test_name("Line");
+		vector<v2> corners = { v2(0.136, 0.3469), v2(0.864136, 0.1457) };
+		print_test_result(is_convex(corners));
+	}
+	
+	{
 		print_test_name("Valid polygon A");
 		vector<v2> corners = { v2(0, 0), v2(0, 1), v2(1, 1) };
 		print_test_result(is_convex(corners));

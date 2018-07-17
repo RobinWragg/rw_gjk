@@ -17,7 +17,6 @@ set based on a combination of the size of the shapes being tested and IEEE float
 See end of file for license.
 */
 
-// TODO: check for NaN?
 // TODO: remove asserts and handle those states in a graceful way.
 // TODO: calculate TINY_NUMBER appropriately. It has something to do with adding largest_radius in shapes_are_overlapping(). TINY_NUMBER is basically used as half the thickness of a line. It should be very small but never small enough to cause IEEE-float-related problems.
 // TODO: get_minkowski_diffed_corner() can return in-line corners. Investigate.
@@ -54,9 +53,9 @@ namespace rw_gjk {
 	}
 	
 	bool is_convex(vector<v2> corners) {
-		assert(corners.size() > 2);
+		if (corners.size() < 3) return true;
 		
-		// return false if any three points are collinear, i.e. form a straight line.
+		// return false if any three points are colinear, i.e. form a straight line.
 		for (int c0 = 0; c0 < corners.size(); c0++) {
 			for (int c1 = 0; c1 < corners.size(); c1++) {
 				if (c1 == c0) continue;
@@ -124,6 +123,7 @@ namespace rw_gjk {
 	}
 	
 	void make_circle(double radius, Shape *shape_out) {
+		assert(radius == radius);
 		shape_out->radius = radius;
 		shape_out->pos = ORIGIN;
 		shape_out->angle = 0;
@@ -131,6 +131,10 @@ namespace rw_gjk {
 	}
 	
 	bool try_make_polygon(vector<v2> corners, Shape *shape_out) {
+		for (auto &corner : corners) {
+			assert(corner.x == corner.x && corner.y == corner.y);
+		}
+		
 		if (corners.size() < 3) {
 			return false;
 		}
