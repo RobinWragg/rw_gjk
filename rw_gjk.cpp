@@ -45,10 +45,9 @@ namespace rw_gjk {
 	};
 	
 	bool contains_duplicates(vector<v2> vertices) {
-		if (vertices.size() == 1) return false;
-		for (int s0 = 0; s0 < vertices.size(); s0++) {
-			for (int s1 = s0+1; s1 < vertices.size(); s1++) {
-				if (vertices[s0] == vertices[s1]) return true;
+		for (int i0 = 0; i0 < vertices.size()-1; i0++) {
+			for (int i1 = i0+1; i1 < vertices.size(); i1++) {
+				if (vertices[i0] == vertices[i1]) return true;
 			}
 		}
 		return false;
@@ -140,22 +139,22 @@ namespace rw_gjk {
 			return false;
 		}
 		
-		Shape shape;
-		
 		if (!is_convex(corners)) {
 			return false;
 		}
 		
 		if (shape_out) {
-			*shape_out = shape;
-			shape_out->corners = corners;
-			// set radius
-			for (auto &corner: shape.corners) {
-				if (corner.length() > shape.radius) shape.radius = corner.length();
-			}
 			shape_out->pos = ORIGIN;
 			shape_out->angle = 0;
 			shape_out->is_circle = false;
+			shape_out->corners = corners;
+			
+			// set radius
+			shape_out->radius = 0;
+			for (auto &corner: shape_out->corners) {
+				if (corner.length() > shape_out->radius) shape_out->radius = corner.length();
+			}
+			
 			return true;
 		} else {
 			return false;
