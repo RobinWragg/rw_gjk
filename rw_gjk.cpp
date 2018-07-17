@@ -319,11 +319,10 @@ namespace rw_gjk {
 			}
 			
 			// get the outer normal of that line and get the minkowski diffed corner in that direction.
-			v2 new_corner;
 			int line_end_index = (line_start_index+1) % simplex.size();
 			v2 simplex_line = simplex[line_end_index] - simplex[line_start_index];
 			v2 outer_normal = simplex_line.normal_in_direction_or_0(simplex[line_start_index] - ORIGIN);
-			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
+			v2 new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
 			// check if the new corner is almost identical to one of the points that made the simplex.
 			for (auto &simplex_corner : simplex) {
