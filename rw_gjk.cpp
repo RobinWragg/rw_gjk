@@ -17,7 +17,7 @@ set based on a combination of the size of the shapes being tested and IEEE float
 See end of file for license.
 */
 
-// TODO: calculate TINY_NUMBER appropriately. It has something to do with adding largest_radius in shapes_are_overlapping(). TINY_NUMBER is basically used as half the thickness of a line. It should be very small but never small enough to cause IEEE-float-related problems.
+// TODO: calculate LINE_THICKNESS appropriately. It should be very small but never small enough to cause IEEE-float-related problems.
 // TODO: get_minkowski_diffed_corner() can return in-line corners. Investigate.
 
 #include <vector>
