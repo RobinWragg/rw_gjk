@@ -131,8 +131,10 @@ namespace rw_gjk {
 	}
 	
 	bool try_make_polygon(vector<v2> corners, Shape *shape_out) {
+		
+		// Check for NAN
 		for (auto &corner : corners) {
-			assert(corner.x == corner.x && corner.y == corner.y);
+			if (corner.x != corner.x || corner.y != corner.y) return false;
 		}
 		
 		if (corners.size() < 3) {
@@ -230,6 +232,8 @@ namespace rw_gjk {
 	
 	// returns true when the simplex contains the origin.
 	bool improve_simplex(vector<v2> &simplex, v2 &search_direction) {
+		assert(simplex.size() <= 3);
+		
 		if (simplex.size() == 3) {
 			// cache some basic vectors
 			v2 ab = simplex[1] - simplex[0];
@@ -252,7 +256,6 @@ namespace rw_gjk {
 			}
 		}
 		
-		assert(simplex.size() == 2);
 		return improve_2_simplex(simplex, search_direction);
 	}
 	
