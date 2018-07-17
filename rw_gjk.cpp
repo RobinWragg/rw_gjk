@@ -17,7 +17,6 @@ set based on a combination of the size of the shapes being tested and IEEE float
 See end of file for license.
 */
 
-// TODO: remove asserts and handle those states in a graceful way.
 // TODO: calculate TINY_NUMBER appropriately. It has something to do with adding largest_radius in shapes_are_overlapping(). TINY_NUMBER is basically used as half the thickness of a line. It should be very small but never small enough to cause IEEE-float-related problems.
 // TODO: get_minkowski_diffed_corner() can return in-line corners. Investigate.
 
@@ -168,6 +167,8 @@ namespace rw_gjk {
 	}
 	
 	v2 get_minkowski_diffed_corner(Shape *shape, Shape *other_shape, v2 direction) {
+		assert(!direction.is_0());
+		
 		auto get_baked_corner_of_shape = [](Shape *shape, v2 corner_direction) {
 			if (shape->is_circle) {
 				return shape->pos + (corner_direction.normalised_or_0() * shape->radius);
@@ -322,7 +323,6 @@ namespace rw_gjk {
 			int line_end_index = (line_start_index+1) % simplex.size();
 			v2 simplex_line = simplex[line_end_index] - simplex[line_start_index];
 			v2 outer_normal = simplex_line.normal_in_direction_or_0(simplex[line_start_index] - ORIGIN);
-			assert(!outer_normal.is_0());
 			new_corner = get_minkowski_diffed_corner(shape_a, shape_b, outer_normal);
 			
 			// check if the new corner is almost identical to one of the points that made the simplex.
